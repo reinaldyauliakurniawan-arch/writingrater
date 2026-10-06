@@ -1,0 +1,11 @@
+[
+  {"id":"t1_ta_no_data",              "tasks":["task1_academic"],         "criterion":"task","cap":5,"rule":"There is no data (figures) to support the description."},
+  {"id":"t2_tr_incomplete",           "tasks":["task2"],                  "criterion":"task","cap":5,"rule":"The main parts of the prompt are incompletely addressed."},
+  {"id":"t2_cc_no_paragraphing",      "tasks":["task2"],                  "criterion":"cc",  "cap":5,"rule":"Paragraphing is inadequate or missing."},
+  {"id":"task_format_inappropriate",  "tasks":["task1_academic","task2"],"criterion":"task","cap":4,"rule":"The format is inappropriate for the task (e.g. bullet points, notes, letter format)."},
+  {"id":"lr_unrelated",               "tasks":["task1_academic","task2"],"criterion":"lr",  "cap":4,"rule":"The vocabulary is unrelated to the task."},
+  {"id":"gra_simple_dominant",        "tasks":["task1_academic","task2"],"criterion":"gra", "cap":4,"rule":"Subordinate clauses are rare and simple sentences predominate."},
+  {"id":"gra_length_insufficient",    "tasks":["task1_academic","task2"],"criterion":"gra", "cap":3,"rule":"Length is insufficient to provide evidence of control of sentence forms."},
+  {"id":"cc_off_topic",               "tasks":["task1_academic","task2"],"criterion":"cc",  "cap":2,"rule":"The entire response is off-topic."},
+  {"id":"task_wholly_unrelated",      "tasks":["task1_academic","task2"],"criterion":"task","cap":1,"rule":"The content is wholly unrelated to the task."}
+]
