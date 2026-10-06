@@ -1,0 +1,18 @@
+{
+  "chart_type": "bar",
+  "title": "Sales of two products, 2000–2010",
+  "units": "£ million",
+  "tables": [
+    {
+      "name": "Sales",
+      "columns": ["2000", "2005", "2010"],
+      "rows": [
+        { "label": "Product A", "values": ["20", "30", "40"] },
+        { "label": "Product B", "values": ["15", "~22", "35"] }
+      ]
+    }
+  ],
+  "process_steps": [],
+  "map_changes": [],
+  "notes": []
+}

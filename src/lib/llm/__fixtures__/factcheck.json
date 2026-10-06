@@ -1,0 +1,13 @@
+{
+  "fact_errors": [
+    {
+      "essay_quote": "sales reached 40 million dollars in 2010",
+      "issue": "The currency is wrong: the chart shows pounds, not dollars.",
+      "correct_info": "Sales reached £40 million in 2010.",
+      "severity": "key_feature"
+    }
+  ],
+  "overview_present": true,
+  "overview_quote": "Overall, sales of both products increased over the period.",
+  "data_support_present": true
+}

@@ -46,7 +46,7 @@ export function ok<T>(data: T, status = 200) {
 
 export function fail(code: ErrorCode, detail?: string) {
   const def = ERRORS[code];
-  const message = def.message.replace("{detail}", detail ?? "");
+  const message = def.message.replace("{detail}", (detail ?? "").replace(/[.\s]+$/, ""));
   return NextResponse.json({ error: { code, message } }, { status: def.status });
 }
 

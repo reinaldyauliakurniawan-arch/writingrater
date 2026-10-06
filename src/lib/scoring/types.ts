@@ -17,3 +17,7 @@ export const CRITERION_NAMES: Record<TaskType, Record<CriterionKey, string>> = {
     gra: "Grammatical Range & Accuracy",
   },
 };
+
+export function mapCriteria<T>(fn: (key: CriterionKey) => T): Record<CriterionKey, T> {
+  return { task: fn("task"), cc: fn("cc"), lr: fn("lr"), gra: fn("gra") };
+}

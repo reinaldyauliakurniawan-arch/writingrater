@@ -1,5 +1,5 @@
 import { BAND1_MAX_WORDS, MIN_WORDS, SEVERE_UNDERLENGTH_RATIO } from "../config";
-import { CRITERIA, type Bands, type CriterionKey, type TaskType } from "./types";
+import { mapCriteria, type Bands, type CriterionKey, type TaskType } from "./types";
 
 export const BAND1_SHORT =
   "Responses of 20 words or fewer are rated at Band 1. Write a complete response of at least {MIN} words so that every criterion can be assessed.";
@@ -26,10 +26,7 @@ export function lengthFlags(task: TaskType, counted: number) {
 }
 
 function fixed(band: number, feedback: string): Record<CriterionKey, TemplateCriterion> {
-  return Object.fromEntries(CRITERIA.map((k) => [k, { band, feedback, tip: null }])) as Record<
-    CriterionKey,
-    TemplateCriterion
-  >;
+  return mapCriteria(() => ({ band, feedback, tip: null }));
 }
 
 /**
