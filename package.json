@@ -1,0 +1,42 @@
+{
+  "name": "ielts-writing-rater",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "calibrate": "tsx scripts/calibrate.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.72",
+    "@ai-sdk/google": "^4.0.88",
+    "@ai-sdk/openai": "^4.0.84",
+    "@ai-sdk/openai-compatible": "^3.0.63",
+    "@prisma/client": "^6.19.3",
+    "ai": "^7.0.128",
+    "bcryptjs": "^3.0.3",
+    "next": "16.3.8",
+    "next-auth": "^5.0.0-beta.32",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  }
+}

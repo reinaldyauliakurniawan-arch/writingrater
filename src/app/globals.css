@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* Design tokens (bagian 8.6). Tailwind v4 memakai @theme sebagai pengganti tailwind.config -> theme.extend. */
+@theme {
+  --color-primary: #00a982;
+  --color-primary-hover: #00936f;
+  --color-primary-dark: #007f62;
+  --color-primary-soft: #e6f6f2;
+  --color-accent: #95d001;
+  --color-white: #ffffff;
+  --color-ink: #1f2937;
+  --color-muted: #6b7280;
+  --color-line: #e5e7eb;
+  --color-danger: #dc2626;
+  --color-warning-soft: #fef3c7;
+
+  --shadow-card: 0 4px 16px rgba(17, 24, 39, 0.08);
+  --shadow-card-hover: 0 8px 24px rgba(17, 24, 39, 0.12);
+  --shadow-button: 0 2px 8px rgba(0, 169, 130, 0.3);
+
+  --font-sans: var(--font-montserrat), sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  background: var(--color-white);
+  color: var(--color-ink);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white p-5 shadow-card;
+  }
+  .card-click {
+    @apply rounded-2xl bg-white p-5 shadow-card transition duration-150 hover:-translate-y-0.5 hover:shadow-card-hover;
+  }
+  .btn-primary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 py-2 font-bold text-white shadow-button transition duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-secondary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-primary bg-white px-5 py-2 font-semibold text-primary-dark shadow-sm transition duration-150 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-3 py-2 shadow-inner transition duration-150 outline-none focus:ring-2 focus:ring-primary;
+  }
+  .label {
+    @apply mb-1 block font-semibold;
+  }
+  .page-title {
+    @apply text-[28px] font-bold;
+  }
+  .banner-error {
+    @apply rounded-xl bg-danger px-4 py-3 font-semibold text-white shadow-sm;
+  }
+  .banner-warning {
+    @apply rounded-xl bg-warning-soft px-4 py-3 text-ink shadow-sm;
+  }
+}

@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum TaskType {
+  task1_academic
+  task2
+}
+
+enum SubmissionStatus {
+  draft
+  extracted
+  confirmed
+  graded
+}
+
+enum LlmAction {
+  extract
+  grade
+  polish
+}
+
+enum LlmKind {
+  extract
+  factcheck
+  grade
+  polish
+  rescore
+}
+
+enum Provider {
+  anthropic
+  openai
+  google
+  openai_compatible
+}
+
+model User {
+  id           String            @id @default(uuid()) @db.Char(36)
+  email        String            @unique @db.VarChar(255) // selalu disimpan lowercase
+  name         String            @db.VarChar(100)
+  passwordHash String            @db.VarChar(100)
+  createdAt    DateTime          @default(now())
+  sessions     WritingSession[]
+  submissions  Submission[]
+  polished     PolishedVersion[]
+  llmCalls     LlmCall[]
+}
+
+model WritingSession {
+  id             String       @id @default(uuid()) @db.Char(36)
+  userId         String       @db.Char(36)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  writingBandRaw Float?
+  writingBand    Float?
+  createdAt      DateTime     @default(now())
+  submissions    Submission[]
+
+  @@index([userId, createdAt])
+}
+
+model Submission {
+  id                  String           @id @default(uuid()) @db.Char(36)
+  userId              String           @db.Char(36)
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId           String?          @db.Char(36)
+  session             WritingSession?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  taskType            TaskType
+  status              SubmissionStatus @default(draft)
+  promptText          String           @db.Text // default "" diisi di kode (MySQL menolak default literal di TEXT)
+  promptImagePath     String?          @db.VarChar(255) // relatif ke UPLOAD_DIR
+  extractedData       Json?
+  extractionUncertain Json?
+  essayText           String?          @db.Text
+  wordCountTotal      Int?
+  wordCountExcluded   Int?
+  wordCountCounted    Int?
+  factErrors          Json?
+  gradeResult         Json?
+  bandTask            Int?
+  bandCc              Int?
+  bandLr              Int?
+  bandGra             Int?
+  taskBandRaw         Float?
+  taskBand            Float?
+  model               String?          @db.VarChar(255) // "{provider}:{model}"
+  promptVersion       String?          @db.VarChar(20)
+  lastErrorCode       String?          @db.VarChar(50)
+  createdAt           DateTime         @default(now())
+  gradedAt            DateTime?
+  polished            PolishedVersion?
+  llmCalls            LlmCall[]
+
+  @@unique([sessionId, taskType]) // satu Task 1 dan satu Task 2 per sesi
+  @@index([userId, createdAt])
+}
+
+model PolishedVersion {
+  id               String     @id @default(uuid()) @db.Char(36)
+  submissionId     String     @unique @db.Char(36)
+  submission       Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  userId           String     @db.Char(36)
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetBand       Float
+  polishedText     String     @db.Text
+  rescoredResult   Json
+  rescoredTaskBand Float
+  attempts         Int // 1 atau 2
+  createdAt        DateTime   @default(now())
+}
+
+model LlmCall {
+  id           Int         @id @default(autoincrement())
+  userId       String      @db.Char(36)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submissionId String?     @db.Char(36)
+  submission   Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+  action       LlmAction
+  actionId     String      @db.Char(36)
+  kind         LlmKind
+  model        String      @db.VarChar(255)
+  inputTokens  Int?
+  outputTokens Int?
+  success      Boolean
+  error        String?     @db.Text
+  createdAt    DateTime    @default(now())
+
+  @@index([userId, action, createdAt])
+}
+
+model AppSetting {
+  id                Int       @id @default(1) // selalu 1, satu baris saja
+  provider          Provider
+  model             String    @db.VarChar(200)
+  baseUrl           String?   @db.VarChar(500)
+  apiKeyEncrypted   String?   @db.Text // "<iv_b64>:<authTag_b64>:<ciphertext_b64>"
+  apiKeyLast4       String?   @db.VarChar(4)
+  dailyLimitGrade   Int       @default(10) // 0–1000, divalidasi zod
+  dailyLimitPolish  Int       @default(5)
+  dailyLimitExtract Int       @default(10)
+  lastTestOk        Boolean?
+  lastTestAt        DateTime?
+  updatedAt         DateTime  @updatedAt
+  updatedBy         String?   @db.VarChar(255)
+}
