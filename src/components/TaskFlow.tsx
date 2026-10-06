@@ -8,6 +8,8 @@ import type { SubmissionDetail, SubmissionResult } from "@/lib/types";
 import ErrorBanner from "./ErrorBanner";
 import ImageInput from "./ImageInput";
 import ResultView from "./ResultView";
+import ExtractionEditor from "./ExtractionEditor";
+import type { ExtractedData } from "@/lib/llm/schemas";
 
 type Props = {
   initial: SubmissionDetail;
@@ -25,7 +27,7 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
   const [promptText, setPromptText] = useState(initial.prompt_text);
   const [essay, setEssay] = useState(initial.essay_text);
   const [task2Answering, setTask2Answering] = useState(initial.essay_text.trim() !== "");
-  const [busy, setBusy] = useState<null | "save" | "grade">(null);
+  const [busy, setBusy] = useState<null | "save" | "grade" | "extract" | "confirm">(null);
   const [error, setError] = useState<string | null>(null);
 
   const setDetail = useCallback(
@@ -71,6 +73,42 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
     }
   }
 
+  async function reload() {
+    setDetail(await api<SubmissionDetail>(`/api/submissions/${detail.id}`));
+  }
+
+  async function onExtract() {
+    setError(null);
+    if (!detail.prompt_image_url) {
+      setError("Task 1 wajib menyertakan gambar soal.");
+      return;
+    }
+    setBusy("extract");
+    try {
+      if (promptText !== detail.prompt_text) await savePrompt();
+      await api(`/api/submissions/${detail.id}/extract`, { method: "POST", json: {} });
+      await reload();
+    } catch (e) {
+      setError(errorMessage(e));
+      await reload().catch(() => {});
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onConfirm(data: ExtractedData) {
+    setError(null);
+    setBusy("confirm");
+    try {
+      await api(`/api/submissions/${detail.id}/extracted-data`, { method: "PUT", json: { extracted_data: data } });
+      setDetail({ ...detail, extracted_data: data, status: "confirmed" });
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function onGrade() {
     setError(null);
     setBusy("grade");
@@ -101,12 +139,30 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
           error={error}
           busy={busy !== null}
           primary={
-            isTask1 ? null : (
+            isTask1 ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <button type="button" className="btn-primary" disabled={busy !== null} onClick={onExtract}>
+                  Baca data grafik
+                </button>
+                {busy === "extract" && <span className="text-muted">Sedang membaca grafik… biasanya 10–30 detik</span>}
+              </div>
+            ) : (
               <button type="button" className="btn-primary" disabled={busy !== null} onClick={onTask2Next}>
                 Lanjut
               </button>
             )
           }
+        />
+      )}
+
+      {step === "confirm" && detail.extracted_data && (
+        <ConfirmStep
+          key={detail.extracted_data ? JSON.stringify(detail.extracted_data) : "none"}
+          detail={detail}
+          busy={busy}
+          error={error}
+          onReextract={onExtract}
+          onConfirm={onConfirm}
         />
       )}
 
@@ -280,6 +336,46 @@ function AnswerStep(props: {
           Nilai jawaban
         </button>
         {props.grading && <span className="text-muted">Sedang menilai… biasanya 15–40 detik</span>}
+      </div>
+    </div>
+  );
+}
+
+function ConfirmStep(props: {
+  detail: SubmissionDetail;
+  busy: string | null;
+  error: string | null;
+  onReextract: () => void;
+  onConfirm: (d: ExtractedData) => void;
+}) {
+  const { detail } = props;
+  const [data, setData] = useState<ExtractedData>(detail.extracted_data!);
+  const mismatch = !!detail.extraction_uncertain && !Array.isArray(detail.extraction_uncertain);
+  return (
+    <div className="space-y-4">
+      {mismatch && <p className="banner-warning">Grafik ini sulit dibaca. Cek semua angka dengan teliti.</p>}
+      <p className="text-sm text-muted">
+        Periksa data hasil bacaan grafik. Data ini dipakai untuk mengecek ketepatan angka di jawabanmu. Sel kuning
+        berarti dua kali pembacaan memberi hasil berbeda.
+      </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          {detail.prompt_image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={detail.prompt_image_url} alt="Gambar soal" className="w-full rounded-2xl object-contain shadow-card" />
+          )}
+        </div>
+        <ExtractionEditor value={data} uncertain={detail.extraction_uncertain} onChange={setData} disabled={props.busy !== null} />
+      </div>
+      <ErrorBanner message={props.error} />
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" className="btn-secondary" disabled={props.busy !== null} onClick={props.onReextract}>
+          Baca ulang
+        </button>
+        <button type="button" className="btn-primary" disabled={props.busy !== null} onClick={() => props.onConfirm(data)}>
+          Data sudah benar, lanjut
+        </button>
+        {props.busy === "extract" && <span className="text-muted">Sedang membaca grafik… biasanya 10–30 detik</span>}
       </div>
     </div>
   );

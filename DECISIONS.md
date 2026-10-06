@@ -29,3 +29,6 @@ Format: tanggal — keputusan — alasan.
 - 2026-10-06 — Saat penilaian gagal (LLM, batas harian, dll.), esai dan hitung kata tetap disimpan dan `lastErrorCode` diisi — sesuai aturan "data yang sudah diketik tidak boleh hilang".
 - 2026-10-06 — Contoh model per provider (placeholder di form Pengaturan) ada di `providers.ts` (`PROVIDER_OPTIONS`), hanya sebagai contoh teks, bukan default.
 - 2026-10-06 — Semua query `Submission` dari `src/app/` lewat helper `authz.ts` (`getOwned*`, `createOwnedSubmission`, `updateOwnedSubmission` dengan `where: { id, userId }`).
+- 2026-10-06 — Ekstraksi: kedua panggilan paralel memakai input identik; di mode mock panggilan kedua membaca fixture `extract-b.json` (berbeda satu sel) supaya perbandingan A/B bisa diuji. Satu panggilan gagal = seluruh aksi `LLM_FAILED`, status tidak berubah.
+- 2026-10-06 — `PUT extracted-data` juga menjalankan validasi tambahan (jumlah nilai = jumlah kolom) dan menolak dengan `VALIDATION_ERROR`.
+- 2026-10-06 — Sel tidak pasti dicocokkan dengan nama tabel + label baris + nama kolom (sesuai format `extraction_uncertain`); kalau user mengganti label, sorotan kuning di sel itu hilang.

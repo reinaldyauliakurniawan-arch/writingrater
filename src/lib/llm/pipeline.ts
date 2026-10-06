@@ -12,7 +12,9 @@ import { applyCeilings } from "@/lib/scoring/ceilings";
 import { taskBand, writingBand } from "@/lib/scoring/rounding";
 import { mapCriteria, type Bands, type CriterionKey, type TaskType } from "@/lib/scoring/types";
 import { callStructured, LlmError, type CallLog } from "./callStructured";
-import { checkGradeOutput, ExtractedData, FactCheck, GradeOutput } from "./schemas";
+import { checkExtractedData, checkGradeOutput, ExtractedData, FactCheck, GradeOutput } from "./schemas";
+import { compareExtraction } from "./compareExtraction";
+import { buildExtractContent, EXTRACT_SYSTEM } from "./prompts/extract";
 import { buildGradeContent, buildGradeSystem } from "./prompts/grade";
 import { buildFactcheckContent, FACTCHECK_SYSTEM } from "./prompts/factcheck";
 
@@ -227,3 +229,45 @@ export async function updateWritingBand(sessionId: string, userId: string) {
 }
 
 export const minWordsOf = (task: TaskType) => MIN_WORDS[task];
+
+/** Aksi `extract` (bagian 6.2): dua panggilan paralel, bandingkan, simpan A. Status -> extracted. */
+export async function extractSubmission(sub: Submission, userId: string) {
+  if (!sub.promptImagePath) throw new AppError("IMAGE_REQUIRED");
+  const image = await readImage(sub.promptImagePath);
+  const actionId = randomUUID();
+  const log = (): CallLog => ({ userId, submissionId: sub.id, action: "extract", actionId, kind: "extract" });
+  const call = (fixture: string) =>
+    callStructured({
+      name: "extract",
+      schema: ExtractedData,
+      system: EXTRACT_SYSTEM,
+      content: buildExtractContent({ image, promptText: sub.promptText }),
+      maxTokens: 4000,
+      log: log(),
+      validate: checkExtractedData,
+      fixture,
+    });
+
+  await assertWithinLimit(userId, "extract");
+  let a: ExtractedData;
+  let b: ExtractedData;
+  try {
+    [{ value: a }, { value: b }] = await Promise.all([call("extract"), call("extract-b")]);
+  } catch (e) {
+    const code = e instanceof AppError ? e.code : "LLM_FAILED";
+    await prisma.submission.update({ where: { id: sub.id, userId }, data: { lastErrorCode: code } });
+    if (e instanceof AppError) throw e;
+    throw new LlmError(e);
+  }
+
+  const uncertain = compareExtraction(a, b);
+  return prisma.submission.update({
+    where: { id: sub.id, userId },
+    data: {
+      extractedData: a as unknown as Prisma.InputJsonValue,
+      extractionUncertain: uncertain as unknown as Prisma.InputJsonValue,
+      status: "extracted",
+      lastErrorCode: null,
+    },
+  });
+}
