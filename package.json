@@ -9,7 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "calibrate": "tsx scripts/calibrate.ts"
+    "calibrate": "tsx --conditions=react-server scripts/calibrate.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.72",

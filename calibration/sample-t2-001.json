@@ -1,0 +1,14 @@
+{
+  "id": "sample-t2-001",
+  "task_type": "task2",
+  "prompt_text": "Some people believe that university education should be free for everyone. Others think that students should pay for their own studies. Discuss both views and give your own opinion.",
+  "image_file": null,
+  "extracted_data": null,
+  "essay_text": "Nowadays, many people discuss about whether university should be free or not. Some people think government must pay for all students, but other people believe students should pay by themselves. In my opinion, I agree that university education should be free for everyone.\n\nOn the one hand, there are reasons why students should pay. University is very expensive for the government and the money that spent on education could be used for hospitals or roads. Also, if students pay, they will study more serious because they do not want to waste their money. For example, my cousin paid his tuition and he always attend the class.\n\nOn the other hand, free education give everybody the same chance. Poor students can go to university and get good job in the future. When more people are educated, the country become more developed and the economy grow faster. For example in Germany, university is free and many students from poor family can study there.\n\nIn conclusion, although free university is costly, I believe the benefits is bigger than the cost, so the government should pay for university education for everyone.",
+  "human": {
+    "task": 6,
+    "cc": 6,
+    "lr": 6,
+    "gra": 5
+  }
+}

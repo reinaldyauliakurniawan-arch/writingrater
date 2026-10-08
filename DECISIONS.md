@@ -32,3 +32,14 @@ Format: tanggal — keputusan — alasan.
 - 2026-10-06 — Ekstraksi: kedua panggilan paralel memakai input identik; di mode mock panggilan kedua membaca fixture `extract-b.json` (berbeda satu sel) supaya perbandingan A/B bisa diuji. Satu panggilan gagal = seluruh aksi `LLM_FAILED`, status tidak berubah.
 - 2026-10-06 — `PUT extracted-data` juga menjalankan validasi tambahan (jumlah nilai = jumlah kolom) dan menolak dengan `VALIDATION_ERROR`.
 - 2026-10-06 — Sel tidak pasti dicocokkan dengan nama tabel + label baris + nama kolom (sesuai format `extraction_uncertain`); kalau user mengganti label, sorotan kuning di sel itu hilang.
+- 2026-10-08 — `POST /revise` pada submission yang belum `graded` dijawab `VALIDATION_ERROR` — spec tidak memberi kode khusus; kode yang ada paling dekat.
+- 2026-10-08 — Membuat sesi dari `/new` langsung membuat submission Task 1 di sesi itu — langkah pertama sesi selalu Task 1, jadi user tidak perlu klik dua kali.
+- 2026-10-08 — Fixture sesi: `LLM_MOCK_SET=session-t1` (Task 1 `[5,6,6,5]`) dan `session-t2` (Task 2 raw 6.5) untuk uji skor Writing 6.0 / "6.17".
+- 2026-10-08 — Target polished x.5 (mis. 8.5) memakai descriptor band bawah dan atasnya (8 dan 9) — descriptor hanya punya band bulat.
+- 2026-10-08 — Percobaan polish kedua juga mengirim `<previous_rewrite>` (rewrite pertama) bersama pesan "Your previous rewrite was rated …" — tanpa itu model tidak tahu apa yang harus disesuaikan.
+- 2026-10-08 — Rescore memakai fixture `rescore.json` (default 7/7/7/7 = kena target) di mode mock; `LLM_MOCK_SET=polish-retry` membuat rescore meleset (6.0 vs 7.0) untuk uji `attempts = 2`.
+- 2026-10-08 — `rescored_result` = `grade_result` versi polished + `word_count` + `task_band_raw`. Polish gagal mengisi `lastErrorCode` submission (status tetap `graded`); request paralel yang kalah race (unique `submissionId`) memakai versi yang tersimpan.
+- 2026-10-08 — Prompt polish: aturan 3 (fact_check/overview) hanya dimasukkan untuk Task 1, nomor aturan berikutnya menyesuaikan.
+- 2026-10-08 — `npm run calibrate` = `tsx --conditions=react-server scripts/calibrate.ts` — modul server memakai `import "server-only"` yang melempar error di luar kondisi `react-server`. Skrip memuat `.env.local` sendiri.
+- 2026-10-08 — Kalibrasi tidak menulis ke database (tanpa `llm_calls`, tanpa submission, tanpa batas harian), tetapi membaca `app_settings` lewat `getSettings()` supaya memakai model aktif yang dipilih admin. Di `LLM_MOCK=true` database tidak disentuh sama sekali.
+- 2026-10-08 — Contoh kalibrasi `sample-t1-001` memakai gambar `connection-test.png` (disalin ke `calibration/sample-t1-chart.png`); skor manusia di contoh hanya ilustrasi, bukan penilaian examiner.

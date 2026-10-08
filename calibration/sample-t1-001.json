@@ -1,0 +1,43 @@
+{
+  "id": "sample-t1-001",
+  "task_type": "task1_academic",
+  "prompt_text": "The chart below shows the number of visitors (in thousands) to two museums in 2020. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+  "image_file": "sample-t1-chart.png",
+  "extracted_data": {
+    "chart_type": "bar",
+    "title": "Visitors to two museums, 2020",
+    "units": "thousands",
+    "tables": [
+      {
+        "name": "Visitors",
+        "columns": [
+          "2020"
+        ],
+        "rows": [
+          {
+            "label": "City Museum",
+            "values": [
+              "42"
+            ]
+          },
+          {
+            "label": "Science Museum",
+            "values": [
+              "17"
+            ]
+          }
+        ]
+      }
+    ],
+    "process_steps": [],
+    "map_changes": [],
+    "notes": []
+  },
+  "essay_text": "The bar chart illustrates how many people visited two museums, the City Museum and the Science Museum, in 2020. The figures are given in thousands.\n\nOverall, the City Museum was considerably more popular than the Science Museum, attracting more than twice as many visitors during the year.\n\nLooking at the details, the City Museum received around 42 thousand visitors in 2020, which was the higher figure of the two. This means it was clearly the main attraction for people who wanted to visit a museum in that year.\n\nBy contrast, the Science Museum welcomed only 17 thousand visitors, which is 25 thousand fewer than the City Museum. In other words, the number of visitors to the Science Museum was less than half of the number recorded at the City Museum.\n\nTo sum up, there was a significant gap between the two museums, with the City Museum attracting the majority of visitors in 2020 while the Science Museum had a much smaller audience.",
+  "human": {
+    "task": 6,
+    "cc": 7,
+    "lr": 6,
+    "gra": 7
+  }
+}
