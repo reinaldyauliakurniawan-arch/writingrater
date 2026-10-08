@@ -1,6 +1,6 @@
 // Menempatkan koreksi (kutipan dari esai) ke posisi karakter di esai asli. Dipakai server dan browser.
 
-export type CorrectionType = "content" | "data" | "grammar" | "vocab";
+export type CorrectionType = "content" | "data" | "cohesion" | "vocab" | "grammar";
 
 export type CorrectionInput = { quote: string; type: CorrectionType; issue: string; correction: string };
 

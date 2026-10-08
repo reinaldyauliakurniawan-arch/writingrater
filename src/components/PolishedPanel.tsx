@@ -9,10 +9,20 @@ import CriteriaBlocks from "./CriteriaBlocks";
 const TYPE_STYLE: Record<CorrectionType, { label: string; mark: string; dot: string }> = {
   content: { label: "Konten", mark: "bg-[#ede9fe] decoration-[#7c3aed]", dot: "bg-[#7c3aed]" },
   data: { label: "Data", mark: "bg-[#fee2e2] decoration-[#dc2626]", dot: "bg-[#dc2626]" },
-  grammar: { label: "Grammar", mark: "bg-[#fef3c7] decoration-[#d97706]", dot: "bg-[#d97706]" },
+  cohesion: { label: "Koherensi & kohesi", mark: "bg-[#fce7f3] decoration-[#db2777]", dot: "bg-[#db2777]" },
   vocab: { label: "Kosakata", mark: "bg-[#dbeafe] decoration-[#2563eb]", dot: "bg-[#2563eb]" },
+  grammar: { label: "Grammar", mark: "bg-[#fef3c7] decoration-[#d97706]", dot: "bg-[#d97706]" },
 };
-const TYPE_ORDER: CorrectionType[] = ["content", "data", "grammar", "vocab"];
+
+/** Kelompok legenda per kriteria penilaian. */
+function legendGroups(task: PolishedView["task_type"]): { criterion: string; types: CorrectionType[] }[] {
+  return [
+    { criterion: task === "task1_academic" ? "Task Achievement" : "Task Response", types: task === "task1_academic" ? ["content", "data"] : ["content"] },
+    { criterion: "Coherence & Cohesion", types: ["cohesion"] },
+    { criterion: "Lexical Resource", types: ["vocab"] },
+    { criterion: "Grammatical Range & Accuracy", types: ["grammar"] },
+  ];
+}
 
 /** Esai asli dengan sorotan kesalahan; keterangan muncul saat hover (desktop) atau tap (HP). */
 function MarkedOriginal({ polished }: { polished: PolishedView }) {
@@ -52,7 +62,7 @@ function MarkedOriginal({ polished }: { polished: PolishedView }) {
 /** Versi polished di bawah hasil (bagian 8.3): esai asli bertanda di kiri, versi polished di kanan. */
 export default function PolishedPanel({ polished }: { polished: PolishedView }) {
   const [copied, setCopied] = useState(false);
-  const counts = TYPE_ORDER.map((t) => ({ t, n: polished.original_marks.filter((m) => m.type === t).length }));
+  const count = (t: CorrectionType) => polished.original_marks.filter((m) => m.type === t).length;
 
   async function copy() {
     try {
@@ -74,20 +84,26 @@ export default function PolishedPanel({ polished }: { polished: PolishedView }) 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-3">
           <h3 className="font-bold">Tulisan kamu</h3>
-          {polished.original_marks.length > 0 ? (
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-              {counts.map(({ t, n }) => (
-                <li key={t} className="flex items-center gap-1.5">
-                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${TYPE_STYLE[t].dot}`} />
-                  {TYPE_STYLE[t].label} ({n})
+          {polished.has_corrections ? (
+            <ul className="space-y-1 text-sm text-muted">
+              {legendGroups(polished.task_type).map((g) => (
+                <li key={g.criterion} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="font-semibold text-ink">{g.criterion}:</span>
+                  {g.types.map((t) => (
+                    <span key={t} className="flex items-center gap-1.5">
+                      <span className={`inline-block h-2.5 w-2.5 rounded-full ${TYPE_STYLE[t].dot}`} />
+                      {TYPE_STYLE[t].label} ({count(t)})
+                    </span>
+                  ))}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted">
-              {polished.has_corrections
-                ? "Tidak ada kesalahan spesifik yang ditandai."
-                : "Versi polished ini dibuat sebelum fitur penanda kesalahan ada."}
+            <p className="banner-warning text-sm">
+              Versi polished ini dibuat sebelum penanda kesalahan lengkap ada
+              {polished.original_marks.length > 0 ? ", jadi hanya kesalahan data yang ditandai" : ""}. Untuk melihat
+              kesalahan konten, koherensi, kosakata, dan grammar, pakai &quot;Revisi &amp; nilai ulang&quot; lalu buka
+              versi polished yang baru.
             </p>
           )}
           {polished.original_marks.length > 0 && (

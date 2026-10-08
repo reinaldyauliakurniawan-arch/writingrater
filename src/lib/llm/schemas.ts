@@ -81,19 +81,25 @@ export function checkGradeOutput(g: GradeOutput): string | null {
 }
 
 // ---- 6.5 Polish ----
-export const CORRECTION_TYPES = ["content", "data", "grammar", "vocab"] as const;
-export const Correction = z.object({
+export const CORRECTION_TYPES = ["content", "data", "cohesion", "vocab", "grammar"] as const;
+const CorrectionItem = z.object({
   quote: z.string().min(1), // kutipan persis dari esai asli, maks. 12 kata
-  type: z.enum(CORRECTION_TYPES),
   issue: z.string(), // apa yang salah
   correction: z.string(), // versi yang benar
 });
-export type Correction = z.infer<typeof Correction>;
+export type Correction = z.infer<typeof CorrectionItem> & { type: (typeof CORRECTION_TYPES)[number] };
 
+// Satu daftar per kriteria supaya model memeriksa keempatnya (satu daftar gabungan cenderung hanya grammar).
+const itemList = z.array(CorrectionItem).max(15);
 export const PolishOutput = z.object({
-  corrections: z.array(Correction).max(30),
+  corrections: z.object({ content: itemList, cohesion: itemList, vocab: itemList, grammar: itemList }),
   polished_text: z.string().min(1),
 });
+
+/** Daftar per kriteria -> daftar datar bertipe (format simpan di PolishedVersion.corrections). */
+export function flattenCorrections(c: PolishOutput["corrections"]): Correction[] {
+  return (["content", "cohesion", "vocab", "grammar"] as const).flatMap((type) => c[type].map((i) => ({ ...i, type })));
+}
 export type PolishOutput = z.infer<typeof PolishOutput>;
 
 // ---- 6.6 Tes koneksi ----

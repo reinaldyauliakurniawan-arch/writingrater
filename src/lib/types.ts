@@ -28,6 +28,7 @@ export type SubmissionResult = {
 
 export type PolishedView = {
   target_band: number;
+  task_type: TaskTypeValue;
   original_text: string;
   original_marks: CorrectionMark[]; // urut, tidak bertumpuk
   has_corrections: boolean; // false = versi polished lama (dibuat sebelum fitur koreksi)

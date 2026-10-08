@@ -67,6 +67,7 @@ export function toPolishedView(sub: Submission, p: PolishedVersion): PolishedVie
   const rescored = p.rescoredResult as unknown as { criteria: Record<CriterionKey, StoredCriterion> };
   return {
     target_band: p.targetBand,
+    task_type: sub.taskType,
     original_text: sub.essayText ?? "",
     original_marks: correctionMarks(sub, p),
     has_corrections: p.corrections !== null,

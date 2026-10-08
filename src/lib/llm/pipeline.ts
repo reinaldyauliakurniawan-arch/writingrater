@@ -11,7 +11,16 @@ import { applyCeilings } from "@/lib/scoring/ceilings";
 import { polishTarget, taskBand, writingBand } from "@/lib/scoring/rounding";
 import { mapCriteria, type Bands, type CriterionKey, type TaskType } from "@/lib/scoring/types";
 import { callStructured, LlmError, type CallLog } from "./callStructured";
-import { checkExtractedData, checkGradeOutput, ExtractedData, FactCheck, GradeOutput, PolishOutput } from "./schemas";
+import {
+  checkExtractedData,
+  checkGradeOutput,
+  type Correction,
+  ExtractedData,
+  FactCheck,
+  flattenCorrections,
+  GradeOutput,
+  PolishOutput,
+} from "./schemas";
 import { compareExtraction } from "./compareExtraction";
 import { buildExtractContent, EXTRACT_SYSTEM } from "./prompts/extract";
 import { buildGradeContent, buildGradeSystem } from "./prompts/grade";
@@ -292,7 +301,7 @@ export async function polishSubmission(sub: Submission, userId: string) {
     tip: previous.criteria[k].tip,
   }));
 
-  type Attempt = { text: string; corrections: PolishOutput["corrections"]; rescore: GradeCoreResult };
+  type Attempt = { text: string; corrections: Correction[]; rescore: GradeCoreResult };
   const attempts: Attempt[] = [];
   try {
     while (attempts.length < POLISH_MAX_ATTEMPTS) {
@@ -316,7 +325,7 @@ export async function polishSubmission(sub: Submission, userId: string) {
         log: { ...log, kind: "polish" },
       });
       const text = polished.value.polished_text.trim();
-      const corrections = polished.value.corrections;
+      const corrections = flattenCorrections(polished.value.corrections);
       const rescore = await gradeCore(
         { task: sub.taskType, promptText: sub.promptText, image, extractedData, essayText: text },
         log,
@@ -346,7 +355,7 @@ export async function polishSubmission(sub: Submission, userId: string) {
         rescoredResult: rescoredResult as unknown as Prisma.InputJsonValue,
         rescoredTaskBand: best.rescore.taskBand,
         // Data salah Task 1 diambil dari fact_check saat ditampilkan, bukan dari daftar polish.
-        corrections: best.corrections.filter((c) => c.type !== "data") as unknown as Prisma.InputJsonValue,
+        corrections: best.corrections as unknown as Prisma.InputJsonValue,
         attempts: attempts.length,
       },
     });
