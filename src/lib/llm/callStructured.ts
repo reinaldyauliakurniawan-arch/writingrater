@@ -44,6 +44,10 @@ export type CallOptions<T> = {
 
 const RETRY_DELAY_MS = 2000;
 const TIMEOUT_MS = 50_000;
+// Model reasoning (Gemini 3.x, OpenAI o-series/GPT-5) menghitung token "thinking" ke maxOutputTokens.
+// Tanpa ruang tambahan jawaban JSON terpotong (finishReason "length"). Total maks 16000 supaya
+// tetap di bawah batas output model lama (mis. 16384).
+const REASONING_HEADROOM = 12_000;
 const FIXTURE_DIR = path.join(process.cwd(), "src", "lib", "llm", "__fixtures__");
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -123,7 +127,7 @@ export async function callStructured<T>(opts: CallOptions<T>): Promise<{ value: 
             },
           ],
           temperature: 0,
-          maxOutputTokens: opts.maxTokens,
+          maxOutputTokens: opts.maxTokens + REASONING_HEADROOM,
           maxRetries: 0,
           abortSignal: AbortSignal.timeout(TIMEOUT_MS),
         });
