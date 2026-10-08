@@ -140,9 +140,6 @@ model AppSetting {
   baseUrl           String?   @db.VarChar(500)
   apiKeyEncrypted   String?   @db.Text // "<iv_b64>:<authTag_b64>:<ciphertext_b64>"
   apiKeyLast4       String?   @db.VarChar(4)
-  dailyLimitGrade   Int       @default(10) // 0–1000, divalidasi zod
-  dailyLimitPolish  Int       @default(5)
-  dailyLimitExtract Int       @default(10)
   lastTestOk        Boolean?
   lastTestAt        DateTime?
   updatedAt         DateTime  @updatedAt

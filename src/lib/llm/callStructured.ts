@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { serverEnv } from "@/lib/env";
 import { getModel } from "./providers";
+import { providerErrorCode } from "./providerErrors";
 
 export class LlmError extends AppError {
   constructor(public cause?: unknown) {
@@ -87,8 +88,10 @@ function errorText(e: unknown): string {
   if (e instanceof Error) return `${e.name}: ${e.message}`;
   return String(e);
 }
-
-/** Satu panggilan structured output (bagian 6.1): temperature 0, 1x retry, setiap percobaan di-log. */
+/**
+ * Satu panggilan structured output (bagian 6.1): temperature 0, 1x retry, setiap percobaan di-log.
+ * Kuota habis / key ditolak langsung dilempar tanpa retry.
+ */
 export async function callStructured<T>(opts: CallOptions<T>): Promise<{ value: T; model: string }> {
   const mock = serverEnv().llmMock;
   // Konfigurasi dicek sebelum percobaan pertama: tidak dikonfigurasi = gagal tanpa retry/log.
@@ -135,6 +138,8 @@ export async function callStructured<T>(opts: CallOptions<T>): Promise<{ value: 
     } catch (e) {
       lastError = e;
       await writeLog(opts.log, { model: label, ...usage, success: false, error: errorText(e) });
+      const code = providerErrorCode(e);
+      if (code) throw new AppError(code);
     }
   }
   throw new LlmError(lastError);

@@ -8,8 +8,6 @@ export const COPY_MIN_RUN = 5; // minimal 5 kata berurutan dianggap salinan soal
 export const TASK2_WEIGHT = 2; // writing = (t1 + 2*t2) / 3
 export const PROMPT_VERSION = "v1.0.0"; // naikkan setiap prompt/KB berubah
 
-export const DEFAULT_LIMITS = { grade: 10, polish: 5, extract: 10 } as const;
-
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const APP_TIMEZONE = "Asia/Jakarta";
 export const APP_NAME = "IELTS Writing Rater";

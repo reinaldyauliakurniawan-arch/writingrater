@@ -11,9 +11,6 @@ export type PublicSettings = {
   base_url: string | null;
   api_key_last4: string | null;
   has_api_key: boolean;
-  daily_limit_grade: number;
-  daily_limit_polish: number;
-  daily_limit_extract: number;
   last_test_ok: boolean | null;
   last_test_at: string | null;
   updated_at: string | null;
@@ -31,11 +28,6 @@ export default function SettingsForm({ initial, providers }: { initial: PublicSe
   const [model, setModel] = useState(initial.model ?? "");
   const [baseUrl, setBaseUrl] = useState(initial.base_url ?? "");
   const [apiKey, setApiKey] = useState("");
-  const [limits, setLimits] = useState({
-    grade: initial.daily_limit_grade,
-    polish: initial.daily_limit_polish,
-    extract: initial.daily_limit_extract,
-  });
   const [test, setTest] = useState<(TestResult & { signature: string }) | null>(null);
   const [busy, setBusy] = useState<null | "test" | "save">(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,12 +74,7 @@ export default function SettingsForm({ initial, providers }: { initial: PublicSe
     try {
       const s = await api<PublicSettings>("/api/settings", {
         method: "PUT",
-        json: {
-          ...llmBody(),
-          daily_limit_grade: limits.grade,
-          daily_limit_polish: limits.polish,
-          daily_limit_extract: limits.extract,
-        },
+        json: llmBody(),
       });
       setSaved(s);
       setApiKey("");
@@ -99,23 +86,6 @@ export default function SettingsForm({ initial, providers }: { initial: PublicSe
       setBusy(null);
     }
   }
-
-  const limitInput = (key: keyof typeof limits, label: string) => (
-    <div>
-      <label htmlFor={`limit-${key}`} className="label text-sm">
-        {label}
-      </label>
-      <input
-        id={`limit-${key}`}
-        type="number"
-        min={0}
-        max={1000}
-        className="input"
-        value={limits[key]}
-        onChange={(e) => setLimits({ ...limits, [key]: Math.max(0, Math.min(1000, Number(e.target.value) || 0)) })}
-      />
-    </div>
-  );
 
   return (
     <div className="space-y-5">
@@ -207,15 +177,6 @@ export default function SettingsForm({ initial, providers }: { initial: PublicSe
             onChange={(e) => setApiKey(e.target.value)}
           />
         </div>
-
-        <fieldset>
-          <legend className="label">Batas harian</legend>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {limitInput("grade", "Penilaian")}
-            {limitInput("polish", "Versi polished")}
-            {limitInput("extract", "Ekstraksi gambar")}
-          </div>
-        </fieldset>
 
         <div className="space-y-2">
           <button type="button" className="btn-secondary" disabled={busy !== null || !model.trim()} onClick={runTest}>

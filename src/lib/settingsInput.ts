@@ -2,8 +2,6 @@ import "server-only";
 import { z } from "zod";
 import { isValidBaseUrl, PROVIDERS, requiresBaseUrl } from "@/lib/llm/providers";
 
-const limit = z.number().int().min(0).max(1000);
-
 const Llm = {
   provider: z.enum(PROVIDERS),
   model: z.string().trim().min(1).max(200),
@@ -21,14 +19,7 @@ function checkBaseUrl(v: { provider: string; base_url?: string | null }, ctx: z.
 
 export const TestBody = z.object(Llm).superRefine(checkBaseUrl);
 
-export const PutBody = z
-  .object({
-    ...Llm,
-    daily_limit_grade: limit,
-    daily_limit_polish: limit,
-    daily_limit_extract: limit,
-  })
-  .superRefine(checkBaseUrl);
+export const PutBody = TestBody;
 
 /** base_url hanya disimpan untuk provider yang membutuhkannya. */
 export const normalizeBaseUrl = (provider: string, baseUrl?: string | null) =>

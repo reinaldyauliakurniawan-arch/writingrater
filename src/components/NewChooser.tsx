@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ErrorBanner from "./ErrorBanner";
-
-type Usage = Record<"grade" | "polish" | "extract", { used: number; limit: number }>;
 
 const CARDS = [
   { key: "task1_academic", title: "Task 1 Academic", desc: "Deskripsikan grafik, tabel, diagram, atau peta. Minimal 150 kata." },
@@ -14,16 +12,8 @@ const CARDS = [
 
 export default function NewChooser() {
   const router = useRouter();
-  const [usage, setUsage] = useState<Usage | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/usage")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => setUsage(j?.data ?? null))
-      .catch(() => setUsage(null));
-  }, []);
 
   async function choose(key: (typeof CARDS)[number]["key"]) {
     setBusy(key);
@@ -61,16 +51,6 @@ export default function NewChooser() {
           <span className="mt-1 block text-muted">{c.desc}</span>
         </button>
       ))}
-      {usage && (
-        <div className="card text-sm">
-          <p className="mb-2 font-semibold">Sisa kuota hari ini</p>
-          <ul className="space-y-1 text-muted">
-            <li>Penilaian: {Math.max(0, usage.grade.limit - usage.grade.used)} dari {usage.grade.limit}</li>
-            <li>Versi polished: {Math.max(0, usage.polish.limit - usage.polish.used)} dari {usage.polish.limit}</li>
-            <li>Ekstraksi gambar: {Math.max(0, usage.extract.limit - usage.extract.used)} dari {usage.extract.limit}</li>
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

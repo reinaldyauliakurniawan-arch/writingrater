@@ -20,7 +20,6 @@ export const PUT = handle(async (req: Request) => {
   const newKey = body.api_key || null;
 
   // Tes wajib hanya kalau LLM aktif berubah: key baru, atau key tersimpan dengan provider/model/base_url baru.
-  // Baris tanpa key tidak dipakai sebagai konfigurasi LLM, jadi cukup menyimpan batas harian.
   const llmFieldsChanged =
     !row || row.provider !== body.provider || row.model !== body.model || (row.baseUrl ?? null) !== baseUrl;
   const needsTest = newKey !== null || (!!row?.apiKeyEncrypted && llmFieldsChanged);
@@ -41,9 +40,6 @@ export const PUT = handle(async (req: Request) => {
       model: body.model,
       baseUrl,
       apiKey: newKey,
-      dailyLimitGrade: body.daily_limit_grade,
-      dailyLimitPolish: body.daily_limit_polish,
-      dailyLimitExtract: body.daily_limit_extract,
       testOk,
     },
     admin.email,

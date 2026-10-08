@@ -16,8 +16,15 @@ export const ERRORS = {
   },
   SESSION_SLOT_TAKEN: { status: 409, message: "Task ini sudah ada di sesi." },
   POLISH_NOT_AVAILABLE: { status: 409, message: "Versi polished tidak tersedia untuk jawaban ini." },
-  DAILY_LIMIT_REACHED: { status: 429, message: "Batas harian tercapai. Coba lagi besok." },
   LLM_FAILED: { status: 502, message: "Penilaian gagal diproses. Coba lagi sebentar." },
+  LLM_QUOTA_EXCEEDED: {
+    status: 429,
+    message: "Kuota atau limit API AI sudah habis. Ganti API key di halaman Pengaturan, lalu coba lagi.",
+  },
+  LLM_KEY_INVALID: {
+    status: 502,
+    message: "API key AI ditolak (tidak valid atau sudah dicabut). Ganti API key di halaman Pengaturan.",
+  },
   EMAIL_TAKEN: { status: 409, message: "Email ini sudah terdaftar." },
   INVALID_IMAGE: { status: 400, message: "Gambar harus PNG, JPG, atau WEBP dan maksimal 5 MB." },
   FORBIDDEN: { status: 403, message: "Halaman ini khusus admin." },

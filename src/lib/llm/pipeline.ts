@@ -4,7 +4,6 @@ import type { Prisma, Submission } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { MIN_WORDS, PROMPT_VERSION } from "@/lib/config";
 import { AppError } from "@/lib/errors";
-import { assertWithinLimit } from "@/lib/limits";
 import { readImage } from "@/lib/storage";
 import { countWords, type WordCount } from "@/lib/scoring/wordCount";
 import { applyHardRules, bandsOf, lengthFlags } from "@/lib/scoring/hardRules";
@@ -59,12 +58,11 @@ function scoreOf(bands: Bands) {
 
 /**
  * Penilaian murni (tanpa simpan): 4.1 -> 4.2 -> 6.3 -> 6.4 -> 4.2(3) -> 4.3 -> 4.4.
- * `beforeLlm` dipanggil setelah aturan keras, tepat sebelum LLM (untuk cek batas harian).
  */
 export async function gradeCore(
   input: GradeInput,
   log: LogContext,
-  opts: { kind?: "grade" | "rescore"; beforeLlm?: () => Promise<void>; fixture?: string } = {},
+  opts: { kind?: "grade" | "rescore"; fixture?: string } = {},
 ): Promise<GradeCoreResult> {
   const wordCount = countWords(input.essayText, input.promptText);
   const flags = lengthFlags(input.task, wordCount.counted);
@@ -91,7 +89,6 @@ export async function gradeCore(
     };
   }
 
-  await opts.beforeLlm?.();
   const callLog = (kind: CallLog["kind"]): CallLog | null => (log ? { ...log, kind } : null);
 
   let factCheck: FactCheck | null = null;
@@ -184,7 +181,6 @@ export async function gradeSubmission(sub: Submission, essayText: string, userId
     result = await gradeCore(
       { task: sub.taskType, promptText: sub.promptText, image, extractedData, essayText },
       { userId, submissionId: sub.id, action: "grade", actionId },
-      { beforeLlm: () => assertWithinLimit(userId, "grade") },
     );
   } catch (e) {
     const code = e instanceof AppError ? e.code : "LLM_FAILED";
@@ -250,7 +246,6 @@ export async function extractSubmission(sub: Submission, userId: string) {
       fixture,
     });
 
-  await assertWithinLimit(userId, "extract");
   let a: ExtractedData;
   let b: ExtractedData;
   try {
@@ -287,7 +282,6 @@ export async function polishSubmission(sub: Submission, userId: string) {
   const previous = sub.gradeResult as unknown as GradeResult | null;
   if (target === null || !previous || !sub.essayText) throw new AppError("POLISH_NOT_AVAILABLE");
 
-  await assertWithinLimit(userId, "polish");
   const actionId = randomUUID();
   const log = { userId, submissionId: sub.id, action: "polish" as const, actionId };
   const image = await loadPromptImage(sub);

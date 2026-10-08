@@ -1,7 +1,6 @@
 import "server-only";
 import type { AppSetting, Provider } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { DEFAULT_LIMITS } from "@/lib/config";
 import { serverEnv } from "@/lib/env";
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
 import { PROVIDERS, requiresBaseUrl } from "@/lib/llm/providers";
@@ -13,11 +12,8 @@ export type LlmConfig = {
   baseUrl: string | null;
 };
 
-export type Limits = { grade: number; polish: number; extract: number };
-
 export type ResolvedSettings = {
   llm: LlmConfig | null; // null = LLM_NOT_CONFIGURED
-  limits: Limits;
   source: "database" | "env" | "none";
   row: AppSetting | null;
 };
@@ -35,9 +31,6 @@ function envLlm(): LlmConfig | null {
 
 async function load(): Promise<ResolvedSettings> {
   const row = await prisma.appSetting.findUnique({ where: { id: 1 } });
-  const limits: Limits = row
-    ? { grade: row.dailyLimitGrade, polish: row.dailyLimitPolish, extract: row.dailyLimitExtract }
-    : { ...DEFAULT_LIMITS };
   if (row?.apiKeyEncrypted) {
     return {
       llm: {
@@ -46,13 +39,12 @@ async function load(): Promise<ResolvedSettings> {
         apiKey: decryptSecret(row.apiKeyEncrypted),
         baseUrl: row.baseUrl,
       },
-      limits,
       source: "database",
       row,
     };
   }
   const env = envLlm();
-  return { llm: env, limits, source: env ? "env" : "none", row };
+  return { llm: env, source: env ? "env" : "none", row };
 }
 
 /** Pengaturan aktif: app_settings (key terisi) -> env fallback -> llm null. Cache 30 detik. */
@@ -78,9 +70,6 @@ export async function getPublicSettings() {
     base_url: active?.baseUrl ?? s.llm?.baseUrl ?? row?.baseUrl ?? null,
     api_key_last4: row?.apiKeyLast4 ?? null,
     has_api_key: !!row?.apiKeyEncrypted,
-    daily_limit_grade: s.limits.grade,
-    daily_limit_polish: s.limits.polish,
-    daily_limit_extract: s.limits.extract,
     last_test_ok: row?.lastTestOk ?? null,
     last_test_at: row?.lastTestAt?.toISOString() ?? null,
     updated_at: row?.updatedAt.toISOString() ?? null,
@@ -101,9 +90,6 @@ export async function saveSettings(
     model: string;
     baseUrl: string | null;
     apiKey: string | null; // null = pertahankan key lama
-    dailyLimitGrade: number;
-    dailyLimitPolish: number;
-    dailyLimitExtract: number;
     testOk: boolean | null; // null = tidak ada tes baru
   },
   adminEmail: string,
@@ -116,9 +102,6 @@ export async function saveSettings(
     provider: input.provider,
     model: input.model,
     baseUrl: input.baseUrl,
-    dailyLimitGrade: input.dailyLimitGrade,
-    dailyLimitPolish: input.dailyLimitPolish,
-    dailyLimitExtract: input.dailyLimitExtract,
     updatedBy: adminEmail,
     ...keyFields,
     ...testFields,
