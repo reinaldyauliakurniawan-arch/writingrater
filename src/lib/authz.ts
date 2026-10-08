@@ -60,3 +60,20 @@ export async function createOwnedSubmission(userId: string, taskType: TaskType, 
 export async function updateOwnedSubmission(id: string, userId: string, data: Prisma.SubmissionUpdateInput) {
   return prisma.submission.update({ where: { id, userId }, data });
 }
+
+export async function createOwnedSession(userId: string) {
+  return prisma.writingSession.create({ data: { userId } });
+}
+
+export async function listOwnedSubmissions(userId: string, take = 100) {
+  return prisma.submission.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take });
+}
+
+export async function listOwnedSessions(userId: string, take = 100) {
+  return prisma.writingSession.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take });
+}
+
+/** Submission baru tanpa sesi dengan data yang disalin (dipakai "Revisi & nilai ulang"). */
+export async function createOwnedSubmissionCopy(userId: string, data: Omit<Prisma.SubmissionUncheckedCreateInput, "userId">) {
+  return prisma.submission.create({ data: { ...data, userId } });
+}

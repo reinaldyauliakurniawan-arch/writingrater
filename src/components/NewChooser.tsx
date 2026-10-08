@@ -40,6 +40,14 @@ export default function NewChooser() {
       setBusy(null);
       return;
     }
+    if (isSession) {
+      // Sesi dimulai dari Task 1: buat submission Task 1 di sesi ini sebelum pindah halaman.
+      await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_type: "task1_academic", session_id: json.data.id }),
+      }).catch(() => null);
+    }
     router.push(isSession ? `/sessions/${json.data.id}` : `/submissions/${json.data.id}`);
   }
 

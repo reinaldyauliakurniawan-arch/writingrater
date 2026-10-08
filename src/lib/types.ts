@@ -53,3 +53,22 @@ export type SubmissionDetail = {
 };
 
 export type ApiError = { code: string; message: string };
+
+export type SessionView = {
+  session: { id: string; writing_band: number | null; writing_band_raw: number | null; created_at: string };
+  task1: SubmissionDetail | null;
+  task2: SubmissionDetail | null;
+};
+
+export type HistoryView = {
+  submissions: {
+    id: string;
+    task_type: TaskTypeValue;
+    status: SubmissionStatusValue;
+    task_band: number | null;
+    session_id: string | null;
+    prompt_preview: string;
+    created_at: string;
+  }[];
+  sessions: { id: string; writing_band: number | null; created_at: string }[];
+};

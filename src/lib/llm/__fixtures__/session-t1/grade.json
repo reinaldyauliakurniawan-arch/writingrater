@@ -1,0 +1,46 @@
+{
+  "language_check": "english",
+  "criteria": {
+    "task": {
+      "evidence": [
+        "governments should fund universities",
+        "In my opinion, this is a good idea",
+        "for example in Germany"
+      ],
+      "band": 5,
+      "feedback": "The response addresses both parts of the question and presents a position that is generally clear, stating 'In my opinion, this is a good idea' in the introduction. The main ideas are relevant, and the example 'for example in Germany' helps to support the argument about access to education. However, some ideas are not fully extended, and the second body paragraph lists benefits without explaining why they matter. The conclusion repeats the introduction rather than drawing the argument together, and the opposing view is mentioned only briefly before being dismissed. To improve, develop each main idea with a clear explanation and a specific example, address the opposing view more fully, and write a conclusion that summarises your reasoning rather than repeating earlier sentences.",
+      "tip": "Plan one main idea and one example per body paragraph."
+    },
+    "cc": {
+      "evidence": [
+        "Firstly",
+        "In addition",
+        "On the other hand"
+      ],
+      "band": 6,
+      "feedback": "Information and ideas are arranged coherently and there is a clear overall progression from introduction to conclusion. Paragraphing is used logically, with each body paragraph focused on one side of the argument. Cohesive devices such as 'Firstly' and 'In addition' are used, but they are sometimes mechanical and placed at the start of almost every sentence. Referencing is occasionally unclear, for example 'this make them' where the reader cannot easily tell what 'this' refers to. Some sentences within paragraphs are not well linked, so the reader has to work to follow the reasoning. To improve, vary the way sentences are linked, use pronouns and substitution so that references are always clear, and connect ideas inside paragraphs rather than only at the start of each paragraph.",
+      "tip": null
+    },
+    "lr": {
+      "evidence": [
+        "tuition fees",
+        "make a big impact",
+        "the money that spent"
+      ],
+      "band": 6,
+      "feedback": "The range of vocabulary is adequate for the task, and topic-specific words such as 'tuition fees' and 'higher education' are used appropriately. There are attempts at less common expressions, but some collocations are inaccurate, for example 'make a big impact' and 'do a decision'. Word formation errors also appear, such as 'the money that spent' and 'economical growth' instead of 'economic growth'. These errors do not prevent understanding, but they reduce precision. Some words, such as 'important' and 'good', are repeated several times. To improve, learn common collocations for education and economy topics, check word forms such as economic and economical, and replace repeated general adjectives with more precise alternatives.",
+      "tip": "Keep a list of topic collocations and review it before writing."
+    },
+    "gra": {
+      "evidence": [
+        "If the government pay",
+        "which is very expensive",
+        "Students needs"
+      ],
+      "band": 5,
+      "feedback": "The response uses a mix of simple and complex sentence forms, including conditional and relative clauses such as 'which is very expensive'. However, errors are frequent and appear in many sentences, particularly subject-verb agreement, for example 'Students needs' and 'If the government pay'. Article use is inconsistent, and some sentences are run-on sentences joined only with commas. Complex structures are attempted but are less accurate than simple ones, and punctuation errors sometimes make sentence boundaries unclear. Although the meaning is usually clear, the number of errors limits this criterion. To improve, check subject-verb agreement in every sentence, separate long sentences with full stops or proper linking words, and practise writing accurate complex sentences before trying more ambitious structures.",
+      "tip": null
+    }
+  },
+  "ceilings_triggered": []
+}
