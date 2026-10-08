@@ -24,13 +24,13 @@ export function detectImageType(b: Uint8Array): ImageExt | null {
 export const mimeOf = (relPath: string): string => MIME[path.extname(relPath).slice(1) as ImageExt] ?? "application/octet-stream";
 
 function rootDir() {
-  return path.resolve(process.cwd(), serverEnv().uploadDir);
+  return path.resolve(/*turbopackIgnore: true*/ process.cwd(), serverEnv().uploadDir);
 }
 
 /** Path absolut dari path relatif; menolak path yang keluar dari UPLOAD_DIR. */
 function absolute(relPath: string) {
   const root = rootDir();
-  const abs = path.resolve(root, relPath);
+  const abs = path.resolve(/*turbopackIgnore: true*/ root, relPath);
   if (abs !== root && !abs.startsWith(root + path.sep)) throw new Error("path di luar UPLOAD_DIR");
   return abs;
 }
