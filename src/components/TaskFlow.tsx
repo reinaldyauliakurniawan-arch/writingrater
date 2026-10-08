@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { api, errorMessage } from "@/lib/apiClient";
 import { countWords } from "@/lib/scoring/wordCount";
 import { MIN_WORDS } from "@/lib/config";
-import type { SubmissionDetail, SubmissionResult } from "@/lib/types";
+import { band1 } from "@/lib/format";
+import type { PolishedView, SubmissionDetail, SubmissionResult } from "@/lib/types";
 import ErrorBanner from "./ErrorBanner";
 import ImageInput from "./ImageInput";
 import ResultView from "./ResultView";
+import PolishedPanel from "./PolishedPanel";
 import ExtractionEditor from "./ExtractionEditor";
 import type { ExtractedData } from "@/lib/llm/schemas";
 
@@ -23,11 +26,13 @@ const TASK_TITLES = { task1_academic: "Task 1 Academic", task2: "Task 2" } as co
 const AUTOSAVE_MS = 2000;
 
 export default function TaskFlow({ initial, onChange, afterResult }: Props) {
+  const router = useRouter();
   const [detail, setDetailState] = useState(initial);
   const [promptText, setPromptText] = useState(initial.prompt_text);
   const [essay, setEssay] = useState(initial.essay_text);
   const [task2Answering, setTask2Answering] = useState(initial.essay_text.trim() !== "");
-  const [busy, setBusy] = useState<null | "save" | "grade" | "extract" | "confirm">(null);
+  const [busy, setBusy] = useState<null | "save" | "grade" | "extract" | "confirm" | "revise" | "polish">(null);
+  const [showPolished, setShowPolished] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const setDetail = useCallback(
@@ -109,6 +114,36 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
     }
   }
 
+  async function onRevise() {
+    setError(null);
+    setBusy("revise");
+    try {
+      const { id } = await api<{ id: string }>(`/api/submissions/${detail.id}/revise`, { method: "POST", json: {} });
+      router.push(`/submissions/${id}`);
+    } catch (e) {
+      setError(errorMessage(e));
+      setBusy(null);
+    }
+  }
+
+  async function onPolish() {
+    setError(null);
+    if (detail.polished) {
+      setShowPolished(true);
+      return;
+    }
+    setBusy("polish");
+    try {
+      const polished = await api<PolishedView>(`/api/submissions/${detail.id}/polish`, { method: "POST", json: {} });
+      setDetail({ ...detail, polished });
+      setShowPolished(true);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function onGrade() {
     setError(null);
     setBusy("grade");
@@ -180,7 +215,24 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
 
       {step === "result" && detail.result && (
         <>
-          <ResultView result={detail.result} />
+          <ResultView
+            result={detail.result}
+            polishAction={
+              detail.result.polish_target !== null && (
+                <button type="button" className="btn-primary" disabled={busy !== null} onClick={onPolish}>
+                  Lihat versi polished (target band {band1(detail.result.polish_target)})
+                </button>
+              )
+            }
+            reviseAction={
+              <button type="button" className="btn-secondary" disabled={busy !== null} onClick={onRevise}>
+                Revisi & nilai ulang
+              </button>
+            }
+          />
+          <ErrorBanner message={error} />
+          {busy === "polish" && <p className="text-muted">Sedang menulis ulang… biasanya 30–90 detik</p>}
+          {showPolished && detail.polished && <PolishedPanel polished={detail.polished} />}
           {afterResult}
         </>
       )}

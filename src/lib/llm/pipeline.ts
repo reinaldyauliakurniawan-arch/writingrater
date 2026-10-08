@@ -9,14 +9,15 @@ import { readImage } from "@/lib/storage";
 import { countWords, type WordCount } from "@/lib/scoring/wordCount";
 import { applyHardRules, bandsOf, lengthFlags } from "@/lib/scoring/hardRules";
 import { applyCeilings } from "@/lib/scoring/ceilings";
-import { taskBand, writingBand } from "@/lib/scoring/rounding";
+import { polishTarget, taskBand, writingBand } from "@/lib/scoring/rounding";
 import { mapCriteria, type Bands, type CriterionKey, type TaskType } from "@/lib/scoring/types";
 import { callStructured, LlmError, type CallLog } from "./callStructured";
-import { checkExtractedData, checkGradeOutput, ExtractedData, FactCheck, GradeOutput } from "./schemas";
+import { checkExtractedData, checkGradeOutput, ExtractedData, FactCheck, GradeOutput, PolishOutput } from "./schemas";
 import { compareExtraction } from "./compareExtraction";
 import { buildExtractContent, EXTRACT_SYSTEM } from "./prompts/extract";
 import { buildGradeContent, buildGradeSystem } from "./prompts/grade";
 import { buildFactcheckContent, FACTCHECK_SYSTEM } from "./prompts/factcheck";
+import { buildPolishContent, buildPolishSystem } from "./prompts/polish";
 
 export type StoredCriterion = { band: number; feedback: string; tip: string | null; evidence: string[] };
 
@@ -63,7 +64,7 @@ function scoreOf(bands: Bands) {
 export async function gradeCore(
   input: GradeInput,
   log: LogContext,
-  opts: { kind?: "grade" | "rescore"; beforeLlm?: () => Promise<void> } = {},
+  opts: { kind?: "grade" | "rescore"; beforeLlm?: () => Promise<void>; fixture?: string } = {},
 ): Promise<GradeCoreResult> {
   const wordCount = countWords(input.essayText, input.promptText);
   const flags = lengthFlags(input.task, wordCount.counted);
@@ -119,6 +120,7 @@ export async function gradeCore(
     maxTokens: 4000,
     log: callLog(opts.kind ?? "grade"),
     validate: checkGradeOutput,
+    fixture: opts.fixture,
   });
   const out = graded.value;
 
@@ -270,4 +272,90 @@ export async function extractSubmission(sub: Submission, userId: string) {
       lastErrorCode: null,
     },
   });
+}
+
+const POLISH_MAX_ATTEMPTS = 2;
+const POLISH_TOLERANCE = 0.5;
+
+/**
+ * Aksi `polish` (bagian 6.5): tulis ulang -> rescore (factcheck Task 1 + grade) -> kalau meleset > 0.5
+ * dari target, satu percobaan lagi. Simpan versi paling dekat ke target (seri -> versi kedua).
+ * Pemanggil sudah memastikan status graded, target tersedia, dan belum ada PolishedVersion.
+ */
+export async function polishSubmission(sub: Submission, userId: string) {
+  const target = sub.taskBand === null ? null : polishTarget(sub.taskBand);
+  const previous = sub.gradeResult as unknown as GradeResult | null;
+  if (target === null || !previous || !sub.essayText) throw new AppError("POLISH_NOT_AVAILABLE");
+
+  await assertWithinLimit(userId, "polish");
+  const actionId = randomUUID();
+  const log = { userId, submissionId: sub.id, action: "polish" as const, actionId };
+  const image = await loadPromptImage(sub);
+  const extractedData = sub.extractedData ? ExtractedData.parse(sub.extractedData) : null;
+  const previousGrade = mapCriteria((k) => ({
+    band: previous.criteria[k].band,
+    feedback: previous.criteria[k].feedback,
+    tip: previous.criteria[k].tip,
+  }));
+
+  type Attempt = { text: string; rescore: GradeCoreResult };
+  const attempts: Attempt[] = [];
+  try {
+    while (attempts.length < POLISH_MAX_ATTEMPTS) {
+      const last = attempts.at(-1);
+      if (last && Math.abs(last.rescore.taskBand - target) <= POLISH_TOLERANCE) break;
+      const polished = await callStructured({
+        name: "polish",
+        schema: PolishOutput,
+        system: buildPolishSystem({ task: sub.taskType, target }),
+        content: buildPolishContent({
+          task: sub.taskType,
+          promptText: sub.promptText,
+          image,
+          extractedData,
+          factCheck: previous.fact_check,
+          essayText: sub.essayText,
+          previousGrade,
+          retry: last ? { previousRewrite: last.text, rescored: last.rescore.taskBand, target } : undefined,
+        }),
+        maxTokens: 3000,
+        log: { ...log, kind: "polish" },
+      });
+      const text = polished.value.polished_text.trim();
+      const rescore = await gradeCore(
+        { task: sub.taskType, promptText: sub.promptText, image, extractedData, essayText: text },
+        log,
+        { kind: "rescore", fixture: "rescore" },
+      );
+      attempts.push({ text, rescore });
+    }
+  } catch (e) {
+    const code = e instanceof AppError ? e.code : "LLM_FAILED";
+    await prisma.submission.update({ where: { id: sub.id, userId }, data: { lastErrorCode: code } });
+    if (e instanceof AppError) throw e;
+    throw new LlmError(e);
+  }
+
+  // Paling dekat ke target; seri -> versi yang lebih baru.
+  const best = attempts.reduce((a, b) =>
+    Math.abs(b.rescore.taskBand - target) <= Math.abs(a.rescore.taskBand - target) ? b : a,
+  );
+  const rescoredResult = { ...best.rescore.gradeResult, word_count: best.rescore.wordCount, task_band_raw: best.rescore.taskBandRaw };
+  try {
+    await prisma.polishedVersion.create({
+      data: {
+        submissionId: sub.id,
+        userId,
+        targetBand: target,
+        polishedText: best.text,
+        rescoredResult: rescoredResult as unknown as Prisma.InputJsonValue,
+        rescoredTaskBand: best.rescore.taskBand,
+        attempts: attempts.length,
+      },
+    });
+  } catch (e) {
+    // Request paralel sudah menyimpan versi polished -> pakai yang tersimpan.
+    if (!(typeof e === "object" && e && "code" in e && e.code === "P2002")) throw e;
+  }
+  await prisma.submission.update({ where: { id: sub.id, userId }, data: { lastErrorCode: null } });
 }
