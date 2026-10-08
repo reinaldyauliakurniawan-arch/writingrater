@@ -1,5 +1,6 @@
 // Tipe respons API (bagian 7.4), dipakai server dan browser. Tanpa import server.
 import type { ExtractedData, FactCheck } from "@/lib/llm/schemas";
+import type { CorrectionMark } from "@/lib/corrections";
 
 export type TaskTypeValue = "task1_academic" | "task2";
 export type SubmissionStatusValue = "draft" | "extracted" | "confirmed" | "graded";
@@ -27,6 +28,9 @@ export type SubmissionResult = {
 
 export type PolishedView = {
   target_band: number;
+  original_text: string;
+  original_marks: CorrectionMark[]; // urut, tidak bertumpuk
+  has_corrections: boolean; // false = versi polished lama (dibuat sebelum fitur koreksi)
   polished_text: string;
   rescored_task_band: number;
   rescored_criteria: CriterionView[];

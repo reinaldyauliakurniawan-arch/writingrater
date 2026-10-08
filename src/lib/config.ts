@@ -6,7 +6,7 @@ export const SEVERE_UNDERLENGTH_RATIO = 0.6; // severe jika counted < floor(MIN 
 export const BAND1_MAX_WORDS = 20; // counted <= 20 -> semua kriteria band 1
 export const COPY_MIN_RUN = 5; // minimal 5 kata berurutan dianggap salinan soal
 export const TASK2_WEIGHT = 2; // writing = (t1 + 2*t2) / 3
-export const PROMPT_VERSION = "v1.0.0"; // naikkan setiap prompt/KB berubah
+export const PROMPT_VERSION = "v1.1.0"; // naikkan setiap prompt/KB berubah
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const APP_TIMEZONE = "Asia/Jakarta";

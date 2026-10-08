@@ -110,6 +110,7 @@ model PolishedVersion {
   polishedText     String     @db.Text
   rescoredResult   Json
   rescoredTaskBand Float
+  corrections      Json? // kesalahan di esai asli (content/grammar/vocab); null = versi lama tanpa koreksi
   attempts         Int // 1 atau 2
   createdAt        DateTime   @default(now())
 }

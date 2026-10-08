@@ -6,6 +6,8 @@ import { CRITERIA, CRITERION_NAMES } from "@/lib/scoring/types";
 import type { GradeResult, StoredCriterion } from "@/lib/llm/pipeline";
 import type { CriterionKey } from "@/lib/scoring/types";
 import type { CriterionView, PolishedView, SubmissionDetail, SubmissionResult } from "@/lib/types";
+import type { FactCheck } from "@/lib/llm/schemas";
+import { locateCorrections, type CorrectionInput, type CorrectionMark } from "@/lib/corrections";
 
 export function criteriaView(task: Submission["taskType"], criteria: Record<CriterionKey, StoredCriterion>): CriterionView[] {
   return CRITERIA.map((key) => ({
@@ -46,10 +48,28 @@ export function toSubmissionResult(sub: Submission, session: WritingSession | nu
   };
 }
 
+/** Kesalahan di esai asli: data salah dari fact_check (Task 1) + koreksi content/grammar/vocab dari polish. */
+function correctionMarks(sub: Submission, p: PolishedVersion): CorrectionMark[] {
+  const essay = sub.essayText ?? "";
+  const facts = (sub.factErrors as FactCheck["fact_errors"] | null) ?? [];
+  const data: CorrectionInput[] = facts.map((f) => ({
+    quote: f.essay_quote,
+    type: "data",
+    issue: f.issue,
+    correction: f.correct_info,
+  }));
+  const others = (p.corrections as CorrectionInput[] | null) ?? [];
+  // Data salah ditempatkan dulu: sudah dicek terhadap data grafik.
+  return locateCorrections(essay, [...data, ...others]);
+}
+
 export function toPolishedView(sub: Submission, p: PolishedVersion): PolishedView {
   const rescored = p.rescoredResult as unknown as { criteria: Record<CriterionKey, StoredCriterion> };
   return {
     target_band: p.targetBand,
+    original_text: sub.essayText ?? "",
+    original_marks: correctionMarks(sub, p),
+    has_corrections: p.corrections !== null,
     polished_text: p.polishedText,
     rescored_task_band: p.rescoredTaskBand,
     rescored_criteria: criteriaView(sub.taskType, rescored.criteria),

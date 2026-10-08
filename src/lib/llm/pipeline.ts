@@ -292,7 +292,7 @@ export async function polishSubmission(sub: Submission, userId: string) {
     tip: previous.criteria[k].tip,
   }));
 
-  type Attempt = { text: string; rescore: GradeCoreResult };
+  type Attempt = { text: string; corrections: PolishOutput["corrections"]; rescore: GradeCoreResult };
   const attempts: Attempt[] = [];
   try {
     while (attempts.length < POLISH_MAX_ATTEMPTS) {
@@ -312,16 +312,17 @@ export async function polishSubmission(sub: Submission, userId: string) {
           previousGrade,
           retry: last ? { previousRewrite: last.text, rescored: last.rescore.taskBand, target } : undefined,
         }),
-        maxTokens: 3000,
+        maxTokens: 5000,
         log: { ...log, kind: "polish" },
       });
       const text = polished.value.polished_text.trim();
+      const corrections = polished.value.corrections;
       const rescore = await gradeCore(
         { task: sub.taskType, promptText: sub.promptText, image, extractedData, essayText: text },
         log,
         { kind: "rescore", fixture: "rescore" },
       );
-      attempts.push({ text, rescore });
+      attempts.push({ text, corrections, rescore });
     }
   } catch (e) {
     const code = e instanceof AppError ? e.code : "LLM_FAILED";
@@ -344,6 +345,8 @@ export async function polishSubmission(sub: Submission, userId: string) {
         polishedText: best.text,
         rescoredResult: rescoredResult as unknown as Prisma.InputJsonValue,
         rescoredTaskBand: best.rescore.taskBand,
+        // Data salah Task 1 diambil dari fact_check saat ditampilkan, bukan dari daftar polish.
+        corrections: best.corrections.filter((c) => c.type !== "data") as unknown as Prisma.InputJsonValue,
         attempts: attempts.length,
       },
     });

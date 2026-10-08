@@ -81,7 +81,19 @@ export function checkGradeOutput(g: GradeOutput): string | null {
 }
 
 // ---- 6.5 Polish ----
-export const PolishOutput = z.object({ polished_text: z.string().min(1) });
+export const CORRECTION_TYPES = ["content", "data", "grammar", "vocab"] as const;
+export const Correction = z.object({
+  quote: z.string().min(1), // kutipan persis dari esai asli, maks. 12 kata
+  type: z.enum(CORRECTION_TYPES),
+  issue: z.string(), // apa yang salah
+  correction: z.string(), // versi yang benar
+});
+export type Correction = z.infer<typeof Correction>;
+
+export const PolishOutput = z.object({
+  corrections: z.array(Correction).max(30),
+  polished_text: z.string().min(1),
+});
 export type PolishOutput = z.infer<typeof PolishOutput>;
 
 // ---- 6.6 Tes koneksi ----
