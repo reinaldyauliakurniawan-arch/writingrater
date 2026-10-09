@@ -214,10 +214,19 @@ function curl_result($ch, string $body, string $apiKey, int $curlCode = CURLE_OK
     if ($err !== '') throw new LlmHttpError('Koneksi ke AI gagal: ' . $err);
     $json = json_decode($body, true);
     if ($status < 200 || $status >= 300) {
-        $msg = is_array($json) ? ($json['error']['message'] ?? $json['error'] ?? $json['message'] ?? '') : '';
-        if (!is_string($msg)) $msg = json_enc($msg);
+        // Format error tiap provider berbeda: {error:{message}}, {error:"..."}, {message}, {detail}, {title}, atau teks biasa.
+        $msg = '';
+        if (is_array($json)) {
+            $err = $json['error'] ?? null;
+            $msg = is_array($err) ? ($err['message'] ?? $err['status'] ?? '') : ($err ?? '');
+            $msg = $msg ?: ($json['message'] ?? $json['detail'] ?? $json['title'] ?? '');
+            if (!is_string($msg)) $msg = json_enc($msg);
+        }
+        if ($msg === '') $msg = trim(strip_tags(substr($body, 0, 300)));
         $safe = str_replace($apiKey, '••••', substr($body, 0, 2000));
-        throw new LlmHttpError("HTTP $status" . ($msg ? ": $msg" : ''), $status, $safe);
+        $msg = $apiKey !== '' ? str_replace($apiKey, '••••', $msg) : $msg;
+        $hint = in_array($status, [401, 403], true) ? ' (API key ditolak provider: cek key, provider, dan model yang dipilih)' : '';
+        throw new LlmHttpError("HTTP $status" . ($msg !== '' ? ": $msg" : '') . $hint, $status, $safe);
     }
     if (!is_array($json)) throw new LlmHttpError('Respons AI bukan JSON', $status, substr($body, 0, 500));
     return $json;
