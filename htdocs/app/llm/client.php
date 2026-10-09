@@ -175,17 +175,58 @@ function llm_parse_response(string $provider, array $res): array
     }
 }
 
-/** JSON dari teks model: buang pagar ```json dan ambil objek terluar. */
+/**
+ * JSON dari teks model. Tahan terhadap: blok <think>…</think>, pagar ```json, teks penjelasan sebelum/sesudah,
+ * dan kurung kurawal di luar jawaban. Mengambil objek JSON valid terakhir (jawaban biasanya di akhir).
+ */
 function decode_json_text(string $text): mixed
 {
-    $t = trim($text);
-    $t = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $t);
-    $start = strpos($t, '{');
-    $end = strrpos($t, '}');
-    if ($start === false || $end === false || $end < $start) throw new RuntimeException('Jawaban model bukan JSON');
-    $v = json_decode(substr($t, $start, $end - $start + 1), true);
-    if (json_last_error() !== JSON_ERROR_NONE) throw new RuntimeException('JSON model rusak: ' . json_last_error_msg());
-    return $v;
+    $t = trim(preg_replace('#<think(?:ing)?>.*?</think(?:ing)?>#is', '', $text));
+    $t = preg_replace('#^.*</think(?:ing)?>#is', '', $t); // tag pembuka terpotong
+    $direct = json_decode($t, true);
+    if (is_array($direct)) return $direct;
+    if (preg_match_all('/```(?:json)?\s*(.*?)```/is', $t, $m)) {
+        foreach (array_reverse($m[1]) as $block) {
+            $v = json_decode(trim($block), true);
+            if (is_array($v)) return $v;
+        }
+    }
+    $found = null;
+    foreach (json_object_candidates($t) as $candidate) {
+        $v = json_decode($candidate, true);
+        if (is_array($v)) $found = $v;
+    }
+    if ($found !== null) return $found;
+    $snippet = mb_substr(preg_replace('/\s+/', ' ', $t), 0, 160);
+    throw new RuntimeException('Jawaban model bukan JSON yang valid' . ($snippet !== '' ? " (awal jawaban: \"$snippet\")" : ' (jawaban kosong)'));
+}
+
+/** Potongan teks {…} dengan kurung seimbang (memperhatikan string), dari kiri ke kanan. */
+function json_object_candidates(string $t): array
+{
+    $out = [];
+    $len = strlen($t);
+    for ($i = 0; $i < $len; $i++) {
+        if ($t[$i] !== '{') continue;
+        $depth = 0;
+        $inStr = false;
+        for ($j = $i; $j < $len; $j++) {
+            $c = $t[$j];
+            if ($inStr) {
+                if ($c === '\\') $j++;
+                elseif ($c === '"') $inStr = false;
+                continue;
+            }
+            if ($c === '"') $inStr = true;
+            elseif ($c === '{') $depth++;
+            elseif ($c === '}' && --$depth === 0) {
+                $out[] = substr($t, $i, $j - $i + 1);
+                $i = $j; // lanjut setelah objek ini
+                break;
+            }
+        }
+    }
+    return $out;
 }
 
 function curl_handle(array $req)
