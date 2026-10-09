@@ -1038,6 +1038,7 @@ function settingsPage(root, { settings, providers }) {
       : "");
     const switched = saved.source !== "none" && (st.provider !== saved.provider || st.model.trim() !== (saved.model ?? ""));
     warn.classList.toggle("hidden", !switched);
+    keyInfo.textContent = describeKey();
   };
 
   const testBtn = h("button", { type: "button", class: "btn-secondary", onclick: async () => {
@@ -1075,9 +1076,22 @@ function settingsPage(root, { settings, providers }) {
     h("label", { class: "label", for: "baseUrl" }, "Base URL"),
     h("input", { id: "baseUrl", class: "input", maxlength: "500", placeholder: "https://...", value: st.baseUrl, oninput: (e) => { st.baseUrl = e.target.value; refresh(); } }));
   const modelInput = h("input", { id: "model", class: "input", maxlength: "200", value: st.model, placeholder: opt().modelPlaceholder, oninput: (e) => { st.model = e.target.value; refresh(); } });
-  const keyInput = h("input", { id: "apiKey", type: "password", autocomplete: "off", class: "input", value: "",
+  // Bukan type="password": Chrome mengisi kolom password dengan password login tersimpan, sehingga
+  // password login terkirim sebagai API key (HTTP 401). Teks disamarkan lewat CSS.
+  const keyInput = h("input", { id: "apiKey", type: "text", name: "llm-provider-key", autocomplete: "off", spellcheck: "false",
+    "data-lpignore": "true", "data-1p-ignore": "true", class: "input secret", value: "",
     placeholder: saved.has_api_key && saved.api_key_last4 ? `•••• ${saved.api_key_last4} (kosongkan untuk tetap memakai key ini)` : "",
     oninput: (e) => { st.apiKey = e.target.value; refresh(); } });
+  const keyInfo = h("p", { class: "small muted", style: "margin-top:4px" });
+  const keyToggle = h("button", { type: "button", class: "link-btn", onclick: () => {
+    keyInput.classList.toggle("secret");
+    keyToggle.textContent = keyInput.classList.contains("secret") ? "Tampilkan" : "Sembunyikan";
+  } }, "Tampilkan");
+  const describeKey = () => {
+    const k = st.apiKey.trim();
+    if (k) return `Akan memakai key baru: ${k.slice(0, 6)}…${k.slice(-4)} (${k.length} karakter).`;
+    return saved.has_api_key && saved.api_key_last4 ? `Memakai key tersimpan yang berakhiran ${saved.api_key_last4}.` : "Belum ada key tersimpan.";
+  };
 
   const form = h("form", { class: "card stack", onsubmit: async (e) => {
     e.preventDefault();
@@ -1116,7 +1130,9 @@ function settingsPage(root, { settings, providers }) {
     h("div", null, h("label", { class: "label", for: "model" }, "Model"), modelInput,
       h("p", { class: "small muted", style: "margin-top:4px" }, "Sebaiknya model yang bisa membaca gambar. Model teks saja tetap bisa dipakai dengan data grafik manual atau database soal.")),
     baseUrlWrap,
-    h("div", null, h("label", { class: "label", for: "apiKey" }, "API key"), keyInput),
+    h("div", null,
+      h("div", { class: "row", style: "justify-content:space-between" }, h("label", { class: "label", for: "apiKey" }, "API key"), keyToggle),
+      keyInput, keyInfo),
     h("div", { class: "stack-sm" }, h("div", null, testBtn), testResult),
     warn, errBox, noticeBox, saveBtn,
   );
