@@ -12,7 +12,9 @@ import ImageInput from "./ImageInput";
 import ResultView from "./ResultView";
 import PolishedPanel from "./PolishedPanel";
 import ExtractionEditor from "./ExtractionEditor";
-import type { ExtractedData } from "@/lib/llm/schemas";
+import QuestionPicker from "./QuestionPicker";
+import SaveQuestion from "./SaveQuestion";
+import { emptyExtractedData, type ExtractedData } from "@/lib/llm/schemas";
 
 type Props = {
   initial: SubmissionDetail;
@@ -33,6 +35,7 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
   const [task2Answering, setTask2Answering] = useState(initial.essay_text.trim() !== "");
   const [busy, setBusy] = useState<null | "save" | "grade" | "extract" | "confirm" | "revise" | "polish">(null);
   const [showPolished, setShowPolished] = useState(false);
+  const [manual, setManual] = useState(false); // Task 1: isi data grafik manual tanpa membaca gambar
   const [error, setError] = useState<string | null>(null);
 
   const setDetail = useCallback(
@@ -49,7 +52,9 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
       ? "result"
       : isTask1
         ? detail.status === "draft"
-          ? "prompt"
+          ? manual
+            ? "confirm"
+            : "prompt"
           : detail.status === "extracted"
             ? "confirm"
             : "answer"
@@ -101,11 +106,36 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
     }
   }
 
+  async function onManual() {
+    setError(null);
+    if (!promptText.trim() && !detail.prompt_image_url) {
+      setError("Isi soal dulu (teks atau gambar).");
+      return;
+    }
+    setBusy("save");
+    try {
+      if (promptText !== detail.prompt_text) setDetail(await savePrompt());
+      setManual(true);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function onUseQuestion(d: SubmissionDetail) {
+    setError(null);
+    setDetail(d);
+    setPromptText(d.prompt_text);
+    if (d.task_type === "task2") setTask2Answering(true);
+  }
+
   async function onConfirm(data: ExtractedData) {
     setError(null);
     setBusy("confirm");
     try {
       await api(`/api/submissions/${detail.id}/extracted-data`, { method: "PUT", json: { extracted_data: data } });
+      setManual(false);
       setDetail({ ...detail, extracted_data: data, status: "confirmed" });
     } catch (e) {
       setError(errorMessage(e));
@@ -166,6 +196,15 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
       <h1 className="page-title">{TASK_TITLES[detail.task_type]}</h1>
 
       {step === "prompt" && (
+        <QuestionPicker
+          submissionId={detail.id}
+          taskType={detail.task_type}
+          disabled={busy !== null}
+          onUsed={onUseQuestion}
+        />
+      )}
+
+      {step === "prompt" && (
         <PromptStep
           detail={detail}
           promptText={promptText}
@@ -179,6 +218,9 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
                 <button type="button" className="btn-primary" disabled={busy !== null} onClick={onExtract}>
                   Baca data grafik
                 </button>
+                <button type="button" className="btn-secondary" disabled={busy !== null} onClick={onManual}>
+                  Isi data manual
+                </button>
                 {busy === "extract" && <span className="text-muted">Sedang membaca grafik… biasanya 10–30 detik</span>}
               </div>
             ) : (
@@ -190,13 +232,14 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
         />
       )}
 
-      {step === "confirm" && detail.extracted_data && (
+      {step === "confirm" && (detail.extracted_data || manual) && (
         <ConfirmStep
-          key={detail.extracted_data ? JSON.stringify(detail.extracted_data) : "none"}
+          key={detail.extracted_data ? JSON.stringify(detail.extracted_data) : "manual"}
           detail={detail}
           busy={busy}
           error={error}
           onReextract={onExtract}
+          onBack={manual ? () => setManual(false) : undefined}
           onConfirm={onConfirm}
         />
       )}
@@ -211,6 +254,10 @@ export default function TaskFlow({ initial, onChange, afterResult }: Props) {
           onGrade={onGrade}
           onBack={isTask1 ? undefined : () => setTask2Answering(false)}
         />
+      )}
+
+      {(step === "answer" || step === "result") && (
+        <SaveQuestion detail={detail} onSaved={(question) => setDetail({ ...detail, question })} />
       )}
 
       {step === "result" && detail.result && (
@@ -297,7 +344,8 @@ function PromptStep(props: {
       </div>
       <div>
         <p className="label">
-          Gambar soal {detail.task_type === "task1_academic" ? "(wajib)" : "(opsional)"}
+          Gambar soal{" "}
+          {detail.task_type === "task1_academic" ? "(wajib, kecuali data grafik diisi manual)" : "(opsional)"}
         </p>
         <ImageInput submissionId={detail.id} imageUrl={detail.prompt_image_url} onChange={props.onImage} />
       </div>
@@ -341,7 +389,9 @@ function AnswerStep(props: {
   return (
     <div className="space-y-4">
       <details className="card" open>
-        <summary className="cursor-pointer font-semibold">Soal</summary>
+        <summary className="cursor-pointer font-semibold">
+          Soal{detail.question && <span className="font-normal text-muted"> · {detail.question.name}</span>}
+        </summary>
         <div className="mt-3 space-y-3">
           {detail.prompt_text && <p className="whitespace-pre-wrap">{detail.prompt_text}</p>}
           {detail.prompt_image_url && (
@@ -398,32 +448,44 @@ function ConfirmStep(props: {
   busy: string | null;
   error: string | null;
   onReextract: () => void;
+  /** Ada = mode isi manual: kembali ke langkah soal. */
+  onBack?: () => void;
   onConfirm: (d: ExtractedData) => void;
 }) {
   const { detail } = props;
-  const [data, setData] = useState<ExtractedData>(detail.extracted_data!);
+  const [data, setData] = useState<ExtractedData>(detail.extracted_data ?? emptyExtractedData());
   const mismatch = !!detail.extraction_uncertain && !Array.isArray(detail.extraction_uncertain);
   return (
     <div className="space-y-4">
       {mismatch && <p className="banner-warning">Grafik ini sulit dibaca. Cek semua angka dengan teliti.</p>}
       <p className="text-sm text-muted">
-        Periksa data hasil bacaan grafik. Data ini dipakai untuk mengecek ketepatan angka di jawabanmu. Sel kuning
-        berarti dua kali pembacaan memberi hasil berbeda.
+        {props.onBack
+          ? "Ketik data dari grafik: judul kolom (mis. tahun), label baris, dan angkanya. Data ini dipakai untuk mengecek ketepatan angka di jawabanmu."
+          : "Periksa data hasil bacaan grafik. Data ini dipakai untuk mengecek ketepatan angka di jawabanmu. Sel kuning berarti dua kali pembacaan memberi hasil berbeda."}
       </p>
       <div className="grid gap-4 md:grid-cols-2">
-        <div>
+        <div className="space-y-3">
           {detail.prompt_image_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={detail.prompt_image_url} alt="Gambar soal" className="w-full rounded-2xl object-contain shadow-card" />
+          )}
+          {!detail.prompt_image_url && detail.prompt_text && (
+            <p className="card whitespace-pre-wrap text-sm">{detail.prompt_text}</p>
           )}
         </div>
         <ExtractionEditor value={data} uncertain={detail.extraction_uncertain} onChange={setData} disabled={props.busy !== null} />
       </div>
       <ErrorBanner message={props.error} />
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="btn-secondary" disabled={props.busy !== null} onClick={props.onReextract}>
-          Baca ulang
-        </button>
+        {props.onBack ? (
+          <button type="button" className="btn-secondary" disabled={props.busy !== null} onClick={props.onBack}>
+            Kembali ke soal
+          </button>
+        ) : (
+          <button type="button" className="btn-secondary" disabled={props.busy !== null} onClick={props.onReextract}>
+            Baca ulang
+          </button>
+        )}
         <button type="button" className="btn-primary" disabled={props.busy !== null} onClick={() => props.onConfirm(data)}>
           Data sudah benar, lanjut
         </button>

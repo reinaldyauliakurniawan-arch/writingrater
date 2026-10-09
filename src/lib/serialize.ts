@@ -1,5 +1,5 @@
 import "server-only";
-import type { PolishedVersion, Submission, WritingSession } from "@prisma/client";
+import type { PolishedVersion, Question, Submission, WritingSession } from "@prisma/client";
 import { MIN_WORDS } from "@/lib/config";
 import { polishTarget } from "@/lib/scoring/rounding";
 import { CRITERIA, CRITERION_NAMES } from "@/lib/scoring/types";
@@ -78,7 +78,7 @@ export function toPolishedView(sub: Submission, p: PolishedVersion): PolishedVie
 }
 
 export function toSubmissionDetail(
-  sub: Submission & { polished: PolishedVersion | null },
+  sub: Submission & { polished: PolishedVersion | null; question?: Pick<Question, "id" | "name"> | null },
   session: WritingSession | null,
 ): SubmissionDetail {
   return {
@@ -96,5 +96,6 @@ export function toSubmissionDetail(
     graded_at: sub.gradedAt?.toISOString() ?? null,
     result: toSubmissionResult(sub, session),
     polished: sub.polished ? toPolishedView(sub, sub.polished) : null,
+    question: sub.question ? { id: sub.question.id, name: sub.question.name } : null,
   };
 }

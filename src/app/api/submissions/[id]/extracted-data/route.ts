@@ -14,7 +14,9 @@ export const PUT = handle(async (req: Request, ctx: IdContext) => {
   if (checkExtractedData(body.extracted_data)) throw new AppError("VALIDATION_ERROR");
   const sub = await getOwnedSubmission(id, user.id);
   if (sub.status === "graded") throw new AppError("SUBMISSION_LOCKED");
-  if (sub.status !== "extracted" && sub.status !== "confirmed") throw new AppError("VALIDATION_ERROR");
+  if (sub.taskType !== "task1_academic") throw new AppError("WRONG_TASK_TYPE");
+  // draft = isi data manual tanpa membaca gambar (mis. model AI teks saja).
+  if (sub.status === "draft" && !sub.promptText.trim() && !sub.promptImagePath) throw new AppError("PROMPT_REQUIRED");
   await updateOwnedSubmission(sub.id, user.id, {
     extractedData: body.extracted_data as unknown as Prisma.InputJsonValue,
     status: "confirmed",

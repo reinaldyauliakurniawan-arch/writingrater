@@ -32,7 +32,10 @@ export async function getOwnedSubmission(id: string, userId: string) {
 }
 
 export async function getOwnedSubmissionWithPolished(id: string, userId: string) {
-  const s = await prisma.submission.findFirst({ where: { id, userId }, include: { polished: true } });
+  const s = await prisma.submission.findFirst({
+    where: { id, userId },
+    include: { polished: true, question: { select: { id: true, name: true } } },
+  });
   if (!s) throw new AppError("NOT_FOUND");
   return s;
 }

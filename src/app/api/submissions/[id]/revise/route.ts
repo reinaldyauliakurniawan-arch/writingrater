@@ -24,6 +24,7 @@ export const POST = handle(async (_req: Request, ctx: IdContext) => {
     promptImagePath: imagePath,
     extractedData: (sub.extractedData ?? undefined) as Prisma.InputJsonValue | undefined,
     essayText: sub.essayText,
+    questionId: sub.questionId,
     status: isTask1 && sub.extractedData ? "confirmed" : "draft",
   });
   return ok({ id: created.id }, 201);

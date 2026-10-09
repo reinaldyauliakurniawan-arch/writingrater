@@ -50,6 +50,7 @@ model User {
   submissions  Submission[]
   polished     PolishedVersion[]
   llmCalls     LlmCall[]
+  questions    Question[]
 }
 
 model WritingSession {
@@ -93,11 +94,30 @@ model Submission {
   lastErrorCode       String?          @db.VarChar(50)
   createdAt           DateTime         @default(now())
   gradedAt            DateTime?
+  questionId          String?          @db.Char(36) // soal dari / disimpan ke database soal
+  question            Question?        @relation(fields: [questionId], references: [id], onDelete: SetNull)
   polished            PolishedVersion?
   llmCalls            LlmCall[]
 
   @@unique([sessionId, taskType]) // satu Task 1 dan satu Task 2 per sesi
   @@index([userId, createdAt])
+}
+
+/** Database soal bersama: soal + gambar + data grafik terkonfirmasi, dipakai ulang semua pengguna. */
+model Question {
+  id            String       @id @default(uuid()) @db.Char(36)
+  taskType      TaskType
+  name          String       @db.VarChar(150) // mis. "Cambridge 17 Test 1 Task 1"
+  promptText    String       @db.Text
+  imagePath     String?      @db.VarChar(255) // relatif ke UPLOAD_DIR, folder questions/
+  extractedData Json? // Task 1 saja
+  createdById   String?      @db.Char(36)
+  createdBy     User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  submissions   Submission[]
+
+  @@unique([taskType, name])
 }
 
 model PolishedVersion {

@@ -49,14 +49,21 @@ export async function readImage(relPath: string): Promise<{ data: Uint8Array; mi
   return { data: new Uint8Array(data), mimeType: mimeOf(relPath) };
 }
 
-export async function copyImage(relPath: string, userId: string, newSubmissionId: string) {
+async function copyTo(relPath: string, destBase: string) {
   const ext = path.extname(relPath).slice(1) as ImageExt;
-  const rel = `${userId}/${newSubmissionId}.${ext}`;
+  const rel = `${destBase}.${ext}`;
   const dest = absolute(rel);
   await fs.mkdir(path.dirname(dest), { recursive: true });
   await fs.copyFile(absolute(relPath), dest);
   return rel;
 }
+
+/** Salin gambar ke {UPLOAD_DIR}/{userId}/{submissionId}.{ext} (dari submission lain atau database soal). */
+export const copyImage = (relPath: string, userId: string, newSubmissionId: string) =>
+  copyTo(relPath, `${userId}/${newSubmissionId}`);
+
+/** Salin gambar submission ke database soal: {UPLOAD_DIR}/questions/{questionId}.{ext}. */
+export const copyImageToQuestion = (relPath: string, questionId: string) => copyTo(relPath, `questions/${questionId}`);
 
 export async function deleteImage(relPath: string) {
   try {

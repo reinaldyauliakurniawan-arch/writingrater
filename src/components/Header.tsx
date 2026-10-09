@@ -29,6 +29,9 @@ export default async function Header() {
             <Link href="/history" className="text-primary-dark hover:underline">
               Riwayat
             </Link>
+            <Link href="/questions" className="text-primary-dark hover:underline">
+              Soal
+            </Link>
             {admin && (
               <Link href="/settings" className="text-primary-dark hover:underline">
                 Pengaturan

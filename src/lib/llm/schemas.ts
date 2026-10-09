@@ -18,6 +18,30 @@ export const ExtractedData = z.object({
 });
 export type ExtractedData = z.infer<typeof ExtractedData>;
 
+export const CHART_TYPE_LABELS: Record<ExtractedData["chart_type"], string> = {
+  line: "Grafik garis",
+  bar: "Grafik batang",
+  pie: "Diagram lingkaran",
+  table: "Tabel",
+  process: "Diagram proses",
+  map: "Peta",
+  mixed: "Campuran",
+  other: "Lainnya",
+};
+
+/** Data kosong untuk diisi manual (tanpa membaca gambar). */
+export function emptyExtractedData(): ExtractedData {
+  return {
+    chart_type: "other",
+    title: "",
+    units: "",
+    tables: [{ name: "Data", columns: ["", ""], rows: [{ label: "", values: ["", ""] }] }],
+    process_steps: [],
+    map_changes: [],
+    notes: [],
+  };
+}
+
 /** Validasi tambahan: setiap baris punya jumlah nilai sama dengan jumlah kolom. */
 export function checkExtractedData(d: ExtractedData): string | null {
   for (const t of d.tables) {

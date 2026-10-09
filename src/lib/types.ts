@@ -55,6 +55,19 @@ export type SubmissionDetail = {
   graded_at: string | null;
   result: SubmissionResult | null;
   polished: PolishedView | null;
+  question: { id: string; name: string } | null; // soal dari / tersimpan di database soal
+};
+
+export type QuestionView = {
+  id: string;
+  task_type: TaskTypeValue;
+  name: string;
+  prompt_text: string;
+  image_url: string | null;
+  extracted_data: ExtractedData | null;
+  created_by_name: string | null;
+  created_at: string;
+  can_edit: boolean; // pembuat atau admin
 };
 
 export type ApiError = { code: string; message: string };
