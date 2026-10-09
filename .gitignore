@@ -44,3 +44,6 @@ next-env.d.ts
 storage/uploads/
 .env.local
 !.env.example
+
+# PDF sumber soal (tidak ikut repo)
+/books
