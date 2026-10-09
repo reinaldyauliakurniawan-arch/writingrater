@@ -1,9 +1,9 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# IELTS Writing Rater — versi PHP
 
-# This is NOT the Next.js you know
+Aplikasi ada di `htdocs/` (PHP 8.1–8.3 tanpa framework, MySQL/MariaDB, JavaScript biasa tanpa build) dan ditujukan untuk shared hosting InfinityFree.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- Panduan pasang: `PANDUAN-INFINITYFREE.md`. Uji lokal: `php -S localhost:8000 -t htdocs scripts/php-router.php`.
+- Konfigurasi di `htdocs/config.php` (salinan `config.sample.php`, tidak ikut repo).
+- Setiap request menjalankan paling banyak satu tahap AI (lihat `htdocs/app/llm/pipeline.php`); progres disimpan di `submission.pendingState` dan browser memanggil ulang sampai selesai. Jangan menggabungkan beberapa panggilan AI dalam satu request — batas waktu hosting.
+- Nama tabel huruf kecil supaya sama di Windows dan Linux. Skema: `htdocs/app/schema.sql`, dipasang lewat halaman `/install`.
+- Prompt AI, descriptor (`htdocs/app/kb/`), dan aturan skor mengikuti spec; naikkan `PROMPT_VERSION` di `htdocs/app/bootstrap.php` setiap prompt/KB berubah.
