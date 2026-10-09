@@ -9,7 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "calibrate": "tsx --conditions=react-server scripts/calibrate.ts"
+    "calibrate": "tsx --conditions=react-server scripts/calibrate.ts",
+    "questions:seed": "tsx scripts/questions.ts seed",
+    "questions:export": "tsx scripts/questions.ts export"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.72",
