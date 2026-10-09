@@ -53,7 +53,7 @@ dijalankan sebagai permintaan terpisah, dan satu jawaban AI ditunggu paling lama
 
 ## Update aplikasi
 
-Unggah ulang isi folder `htdocs/` (kecuali `config.php` dan isi `storage/uploads/`), lalu buka `/install` dan klik tombolnya sekali lagi.
+Unggah ulang isi folder `htdocs/` (kecuali `config.php` dan isi `storage/uploads/`). Kolom database baru ditambahkan otomatis saat halaman pertama dibuka; kalau ragu, buka `/install` dan klik tombolnya sekali lagi.
 
 ## Uji di komputer sendiri
 

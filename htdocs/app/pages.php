@@ -134,9 +134,42 @@ function post_new(): never
 function page_history(): never
 {
     $user = require_user();
-    $subs = db_all('SELECT id, taskType, status, taskBand, sessionId, promptText, createdAt FROM `submission` WHERE userId = ? ORDER BY createdAt DESC LIMIT 100', [$user['id']]);
-    $sessions = db_all('SELECT id, writingBand, createdAt FROM `writingsession` WHERE userId = ? ORDER BY createdAt DESC LIMIT 100', [$user['id']]);
-    render('history', ['subs' => $subs, 'sessions' => $sessions], 'Riwayat');
+    $students = student_names($user['id']);
+    $student = normalize_student_name(isset($_GET['murid']) ? (string) $_GET['murid'] : null);
+    if ($student !== null && !in_array($student, $students, true)) $student = null;
+    $where = 's.userId = ?' . ($student !== null ? ' AND s.studentName = ?' : '');
+    $params = $student !== null ? [$user['id'], $student] : [$user['id']];
+    $subs = db_all("SELECT s.id, s.taskType, s.status, s.taskBand, s.sessionId, s.promptText, s.studentName, s.createdAt, s.gradedAt,
+        w.writingBand FROM `submission` s LEFT JOIN `writingsession` w ON w.id = s.sessionId
+        WHERE $where ORDER BY s.createdAt DESC LIMIT 200", $params);
+
+    // Satu baris per sesi (Task 1 + Task 2 digabung), submission lain satu baris masing-masing.
+    $items = [];
+    $sessionIndex = [];
+    foreach ($subs as $s) {
+        if ($s['sessionId'] === null) {
+            $items[] = ['kind' => 'sub', 'sub' => $s, 'createdAt' => $s['createdAt']];
+            continue;
+        }
+        if (!isset($sessionIndex[$s['sessionId']])) {
+            $sessionIndex[$s['sessionId']] = count($items);
+            $items[] = ['kind' => 'session', 'id' => $s['sessionId'], 'writingBand' => $s['writingBand'], 'studentName' => $s['studentName'], 'parts' => [], 'createdAt' => $s['createdAt']];
+        }
+        $i = $sessionIndex[$s['sessionId']];
+        $items[$i]['parts'][$s['taskType']] = $s;
+        $items[$i]['studentName'] ??= $s['studentName'];
+        if ($s['createdAt'] < $items[$i]['createdAt']) $items[$i]['createdAt'] = $s['createdAt'];
+    }
+
+    // Titik grafik progres: submission yang sudah dinilai, urut waktu dinilai.
+    $points = [];
+    foreach (array_reverse($subs) as $s) {
+        if ($s['status'] !== 'graded' || $s['taskBand'] === null) continue;
+        $points[] = ['task' => $s['taskType'], 'band' => (float) $s['taskBand'], 'at' => iso($s['gradedAt'] ?? $s['createdAt']), 'label' => format_date($s['gradedAt'] ?? $s['createdAt']), 'student' => $s['studentName']];
+    }
+    usort($points, fn($a, $b) => strcmp($a['at'], $b['at']));
+
+    render('history', ['items' => $items, 'students' => $students, 'student' => $student, 'points' => $points], 'Riwayat');
 }
 
 function page_questions(): never
@@ -155,13 +188,13 @@ function page_settings(): never
 function page_submission(string $id): never
 {
     $user = require_user();
-    render('submission', ['detail' => submission_detail_by_id($id, $user['id'])], 'Latihan');
+    render('submission', ['detail' => submission_detail_by_id($id, $user['id']), 'students' => student_names($user['id']), 'wide' => true], 'Latihan');
 }
 
 function page_session(string $id): never
 {
     $user = require_user();
-    render('session', ['view' => session_view($id, $user['id'])], 'Sesi Writing');
+    render('session', ['view' => session_view($id, $user['id']), 'students' => student_names($user['id']), 'wide' => true], 'Sesi Writing');
 }
 
 // ---- Instalasi: buat/perbarui tabel dan impor soal bawaan ----
@@ -177,7 +210,7 @@ function install_status(): array
         if ($status['tables']) {
             $status['users'] = (int) db_one('SELECT COUNT(*) AS n FROM `user`')['n'];
             $status['questions'] = (int) db_one('SELECT COUNT(*) AS n FROM `question`')['n'];
-            $status['needs_upgrade'] = !db_one("SHOW COLUMNS FROM `submission` LIKE 'pendingState'");
+            $status['needs_upgrade'] = !db_one("SHOW COLUMNS FROM `submission` LIKE 'studentName'");
         }
     } catch (Throwable $e) {
         $status['db_error'] = $e->getMessage();
@@ -198,9 +231,7 @@ function page_install(string $method): never
         $sql = file_get_contents(APP_DIR . '/schema.sql');
         $sql = preg_replace('/^--.*$/m', '', $sql);
         foreach (array_filter(array_map('trim', explode(';', $sql))) as $stmt) db()->exec($stmt);
-        if (!db_one("SHOW COLUMNS FROM `submission` LIKE 'pendingState'")) {
-            db()->exec('ALTER TABLE `submission` ADD COLUMN `pendingState` longtext DEFAULT NULL');
-        }
+        upgrade_schema();
         $adminId = null;
         foreach ((array) config('admin_emails') as $email) {
             $row = db_one('SELECT id FROM `user` WHERE email = ?', [strtolower(trim($email))]);

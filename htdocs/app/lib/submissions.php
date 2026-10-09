@@ -123,6 +123,7 @@ function submission_detail(array $sub, ?array $session): array
         'task_type' => $sub['taskType'],
         'status' => $sub['status'],
         'session_id' => $sub['sessionId'],
+        'student_name' => $sub['studentName'] ?? null,
         'prompt_text' => $sub['promptText'],
         'prompt_image_url' => $sub['promptImagePath'] ? '/api/submissions/' . $sub['id'] . '/image' : null,
         'extracted_data' => json_decode_or_null($sub['extractedData']),
@@ -178,6 +179,8 @@ function update_writing_band(string $sessionId, string $userId): void
 function create_submission(string $userId, string $taskType, ?string $sessionId): string
 {
     $id = uuid();
+    // Task kedua di sesi yang sama milik murid yang sama.
+    $student = $sessionId ? db_one('SELECT studentName FROM `submission` WHERE sessionId = ? AND userId = ? AND studentName IS NOT NULL LIMIT 1', [$sessionId, $userId]) : null;
     db_insert('submission', [
         'id' => $id,
         'userId' => $userId,
@@ -185,9 +188,23 @@ function create_submission(string $userId, string $taskType, ?string $sessionId)
         'taskType' => $taskType,
         'status' => 'draft',
         'promptText' => '',
+        'studentName' => $student['studentName'] ?? null,
         'createdAt' => now_utc(),
     ]);
     return $id;
+}
+
+/** Nama murid: spasi dirapikan, kosong = null. */
+function normalize_student_name(?string $name): ?string
+{
+    $name = trim(preg_replace('/\s+/u', ' ', (string) $name));
+    return $name === '' ? null : $name;
+}
+
+/** Nama murid yang pernah dipakai user ini (untuk saran isian dan filter riwayat). */
+function student_names(string $userId): array
+{
+    return array_column(db_all('SELECT DISTINCT studentName FROM `submission` WHERE userId = ? AND studentName IS NOT NULL ORDER BY studentName', [$userId]), 'studentName');
 }
 
 function create_session(string $userId): string

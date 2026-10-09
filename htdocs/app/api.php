@@ -96,9 +96,16 @@ function api_patch_submission(string $id): JsonResponse
     $body = request_json();
     $prompt = input_str($body, 'prompt_text', 5000, false, 0, false);
     $essay = input_str($body, 'essay_text', 10000, false, 0, false);
+    $student = input_str($body, 'student_name', 100, false);
     $sub = get_owned_submission($id, $user['id']);
-    if ($sub['status'] === 'graded') throw new AppError('SUBMISSION_LOCKED');
     $data = [];
+    // Nama murid boleh diubah kapan saja (juga setelah dinilai); soal dan jawaban tidak.
+    if ($student !== null) $data['studentName'] = normalize_student_name($student);
+    if ($prompt === null && $essay === null) {
+        update_owned_submission($id, $user['id'], $data);
+        return ok(submission_detail_by_id($id, $user['id']));
+    }
+    if ($sub['status'] === 'graded') throw new AppError('SUBMISSION_LOCKED');
     if ($prompt !== null) $data['promptText'] = $prompt;
     if ($essay !== null) $data['essayText'] = $essay;
     if ($prompt !== null && $prompt !== $sub['promptText']) $data += reset_extraction_fields($sub);
@@ -228,6 +235,7 @@ function api_revise(string $id): JsonResponse
         'extractedData' => $sub['extractedData'],
         'essayText' => $sub['essayText'],
         'questionId' => $sub['questionId'],
+        'studentName' => $sub['studentName'],
         'createdAt' => now_utc(),
     ]);
     return ok(['id' => $newId], 201);

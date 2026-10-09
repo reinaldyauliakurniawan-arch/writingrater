@@ -76,3 +76,33 @@ function is_duplicate_key(Throwable $e): bool
 {
     return $e instanceof PDOException && ($e->errorInfo[1] ?? null) === 1062;
 }
+
+// ---- Upgrade skema: kolom yang ditambahkan setelah instalasi pertama ----
+
+const SCHEMA_VERSION = 2;
+
+/** Aman dijalankan berulang (dipakai /install dan ensure_schema). */
+function upgrade_schema(): void
+{
+    $cols = array_column(db_all('SHOW COLUMNS FROM `submission`'), 'Field');
+    if (!in_array('pendingState', $cols, true)) {
+        db()->exec('ALTER TABLE `submission` ADD COLUMN `pendingState` longtext DEFAULT NULL');
+    }
+    if (!in_array('studentName', $cols, true)) {
+        db()->exec('ALTER TABLE `submission` ADD COLUMN `studentName` varchar(100) DEFAULT NULL, ADD KEY `Submission_userId_studentName_idx` (`userId`, `studentName`)');
+    }
+}
+
+/** Upgrade otomatis sekali per versi skema (penanda di upload_dir), jadi tidak perlu membuka /install setelah update. */
+function ensure_schema(): void
+{
+    require_once APP_DIR . '/lib/storage.php';
+    $marker = upload_root() . '/.schema-v' . SCHEMA_VERSION;
+    if (is_file($marker)) return;
+    try {
+        upgrade_schema();
+        @file_put_contents($marker, now_utc());
+    } catch (Throwable $e) {
+        error_log('upgrade skema: ' . $e->getMessage()); // tabel belum ada: /install yang membuatnya
+    }
+}

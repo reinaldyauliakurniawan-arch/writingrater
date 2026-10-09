@@ -1,6 +1,7 @@
 <?php
 /** @var string $content @var ?string $pageTitle */
 $user = current_user();
+$wide = !empty($vars['wide']);
 $v = '?v=' . filemtime(dirname(APP_DIR) . '/assets/app.js') . filemtime(dirname(APP_DIR) . '/assets/app.css');
 ?><!doctype html>
 <html lang="id">
@@ -20,7 +21,7 @@ $v = '?v=' . filemtime(dirname(APP_DIR) . '/assets/app.js') . filemtime(dirname(
 <body>
 <?php if ($pageTitle !== null): ?>
     <header class="site-header">
-        <div class="header-inner">
+        <div class="header-inner<?= $wide ? ' container-wide' : '' ?>">
             <a href="<?= $user ? '/new' : '/' ?>" class="brand">
                 <img src="/assets/logo.png" alt="Just Speak">
                 <span><?= e(APP_NAME) ?></span>
@@ -39,7 +40,7 @@ $v = '?v=' . filemtime(dirname(APP_DIR) . '/assets/app.js') . filemtime(dirname(
             <?php endif; ?>
         </div>
     </header>
-    <main class="container"><?= $content ?></main>
+    <main class="container<?= $wide ? ' container-wide' : '' ?>"><?= $content ?></main>
 <?php else: ?>
     <?= $content ?>
 <?php endif; ?>

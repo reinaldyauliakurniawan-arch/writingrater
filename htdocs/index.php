@@ -9,6 +9,7 @@ require __DIR__ . '/app/bootstrap.php';
 $path = '/' . trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
 
 start_session();
+if ($path !== '/install') ensure_schema();
 
 if (str_starts_with($path, '/api/')) {
     require APP_DIR . '/api.php';
