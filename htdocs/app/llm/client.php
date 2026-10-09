@@ -435,6 +435,12 @@ function llm_structured_many(array $calls): array
                 if ($e instanceof LlmHttpError && str_contains($e->getMessage(), '(timeout)')) throw new AppError('LLM_TIMEOUT');
                 $adapted = llm_adapt_after_error($calls[$i], $e, $llm['provider']);
                 if ($adapted) $attempts[$i]--; // perubahan format tidak dihitung sebagai percobaan
+                // Jawaban ditolak validasi: beri tahu model apa yang salah. Tanpa ini percobaan ulang (temperature 0)
+                // menghasilkan jawaban yang persis sama.
+                if (!$adapted && !$e instanceof LlmHttpError && empty($calls[$i]['retry_note'])) {
+                    $calls[$i]['retry_note'] = true;
+                    $calls[$i]['content'][] = text_part_for_retry($e->getMessage());
+                }
                 $elapsed = microtime(true) - REQUEST_START;
                 if ($attempts[$i] < 2 && ($adapted || $elapsed < LLM_RETRY_IF_ELAPSED_BELOW)) $retry[] = $i;
             }
@@ -449,6 +455,14 @@ function llm_structured_many(array $calls): array
     }
     ksort($results);
     return $results;
+}
+
+/** Catatan untuk percobaan ulang setelah jawaban ditolak (bahasa Inggris, untuk model). */
+function text_part_for_retry(string $reason): array
+{
+    $reason = preg_replace('/^validation:\s*/', '', $reason);
+    $hint = preg_match('/feedback has \d+ words/', $reason) ? ' Every feedback paragraph must be 80 to 150 words.' : '';
+    return ['type' => 'text', 'text' => "Your previous answer was rejected: $reason.$hint Return the complete JSON again with this fixed."];
 }
 
 function llm_structured(array $call): array

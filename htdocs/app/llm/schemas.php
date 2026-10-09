@@ -162,7 +162,7 @@ function parse_extracted_data(mixed $v): ?array
     return check_extracted_data($d) === null ? $d : null;
 }
 
-const FEEDBACK_MIN_WORDS = 60;
+const FEEDBACK_MIN_WORDS = 40; // prompt meminta 80–150; ini hanya menolak feedback yang jelas terlalu pendek
 const FEEDBACK_MAX_WORDS = 180;
 const TIP_MAX_WORDS = 20;
 
