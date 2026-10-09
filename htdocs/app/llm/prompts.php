@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once APP_DIR . '/lib/scoring.php';
+
 // Prompt AI (bagian 6). Isi sama dengan versi Next.js (PROMPT_VERSION v1.2.0).
 
 const TASK_NAMES = [

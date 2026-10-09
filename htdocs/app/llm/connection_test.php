@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once APP_DIR . '/llm/client.php';
+require_once APP_DIR . '/llm/prompts.php';
 
 const CONNECTION_EXPECTED = [42, 17];
 
