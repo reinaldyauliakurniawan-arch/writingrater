@@ -25,6 +25,11 @@ export const ERRORS = {
     status: 502,
     message: "API key AI ditolak (tidak valid atau sudah dicabut). Ganti API key di halaman Pengaturan.",
   },
+  LLM_NO_VISION: {
+    status: 400,
+    message:
+      "Model AI yang dipakai tidak bisa membaca gambar. Ketik isi soal/data grafik sebagai teks, atau pakai model yang mendukung gambar di halaman Pengaturan.",
+  },
   EMAIL_TAKEN: { status: 409, message: "Email ini sudah terdaftar." },
   INVALID_IMAGE: { status: 400, message: "Gambar harus PNG, JPG, atau WEBP dan maksimal 5 MB." },
   FORBIDDEN: { status: 403, message: "Halaman ini khusus admin." },

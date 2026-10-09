@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { serverEnv } from "@/lib/env";
 import { getModel } from "./providers";
-import { providerErrorCode } from "./providerErrors";
+import { isNoVisionError, providerErrorCode } from "./providerErrors";
 
 export class LlmError extends AppError {
   constructor(public cause?: unknown) {
@@ -102,6 +102,7 @@ export async function callStructured<T>(opts: CallOptions<T>): Promise<{ value: 
   const resolved = mock ? null : await getModel();
   const label = mock ? "mock:mock" : resolved!.label;
 
+  let content = opts.content;
   let lastError: unknown;
   for (let attempt = 1; attempt <= 2; attempt++) {
     if (attempt === 2) await sleep(RETRY_DELAY_MS);
@@ -119,7 +120,7 @@ export async function callStructured<T>(opts: CallOptions<T>): Promise<{ value: 
           messages: [
             {
               role: "user",
-              content: opts.content.map((c) =>
+              content: content.map((c) =>
                 c.type === "text"
                   ? { type: "text" as const, text: c.text }
                   : { type: "file" as const, data: c.image, mediaType: c.mimeType },
@@ -144,6 +145,12 @@ export async function callStructured<T>(opts: CallOptions<T>): Promise<{ value: 
       await writeLog(opts.log, { model: label, ...usage, success: false, error: errorText(e) });
       const code = providerErrorCode(e);
       if (code) throw new AppError(code);
+      // Model teks saja: ekstraksi grafik mustahil; panggilan lain diulang tanpa gambar.
+      if (isNoVisionError(e) && content.some((c) => c.type === "image")) {
+        if (opts.name === "extract") throw new AppError("LLM_NO_VISION");
+        content = content.filter((c) => c.type === "text");
+        attempt--;
+      }
     }
   }
   throw new LlmError(lastError);
