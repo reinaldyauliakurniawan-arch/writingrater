@@ -1076,6 +1076,29 @@ function settingsPage(root, { settings, providers }) {
     h("label", { class: "label", for: "baseUrl" }, "Base URL"),
     h("input", { id: "baseUrl", class: "input", maxlength: "500", placeholder: "https://...", value: st.baseUrl, oninput: (e) => { st.baseUrl = e.target.value; refresh(); } }));
   const modelInput = h("input", { id: "model", class: "input", maxlength: "200", value: st.model, placeholder: opt().modelPlaceholder, oninput: (e) => { st.model = e.target.value; refresh(); } });
+  // Pemilih model: ambil daftar model yang tersedia untuk key ini dari provider.
+  const modelList = h("div", { class: "stack-sm hidden", style: "margin-top:8px" });
+  const fetchModelsBtn = h("button", { type: "button", class: "link-btn", onclick: async () => {
+    fetchModelsBtn.disabled = true;
+    fetchModelsBtn.textContent = "Mengambil…";
+    try {
+      const { models } = await api("/api/settings/models", { method: "POST", json: body() });
+      const select = h("select", { class: "input", "aria-label": "Pilih model", onchange: (e) => {
+        if (!e.target.value) return;
+        st.model = e.target.value;
+        modelInput.value = st.model;
+        refresh();
+      } },
+        h("option", { value: "" }, `— Pilih dari ${models.length} model yang tersedia —`),
+        models.map((m) => h("option", { value: m, selected: m === st.model }, m)));
+      setChildren(modelList, select, h("p", { class: "small muted" }, "Setelah memilih, klik Tes koneksi. Model yang tercantum belum tentu aktif atau cepat; hasil tes yang menentukan."));
+    } catch (e) {
+      setChildren(modelList, h("p", { class: "banner-error" }, errorMessage(e)));
+    }
+    modelList.classList.remove("hidden");
+    fetchModelsBtn.disabled = false;
+    fetchModelsBtn.textContent = "Ambil daftar model";
+  } }, "Ambil daftar model");
   // Bukan type="password": Chrome mengisi kolom password dengan password login tersimpan, sehingga
   // password login terkirim sebagai API key (HTTP 401). Teks disamarkan lewat CSS.
   const keyInput = h("input", { id: "apiKey", type: "text", name: "llm-provider-key", autocomplete: "off", spellcheck: "false",
@@ -1125,9 +1148,12 @@ function settingsPage(root, { settings, providers }) {
         st.provider = e.target.value;
         modelInput.placeholder = opt().modelPlaceholder;
         baseUrlWrap.classList.toggle("hidden", !opt().needsBaseUrl);
+        modelList.classList.add("hidden"); // daftar lama milik provider lain
         refresh();
       } }, providers.map((p) => h("option", { value: p.value, selected: p.value === st.provider }, p.label)))),
-    h("div", null, h("label", { class: "label", for: "model" }, "Model"), modelInput,
+    h("div", null,
+      h("div", { class: "row", style: "justify-content:space-between" }, h("label", { class: "label", for: "model" }, "Model"), fetchModelsBtn),
+      modelInput, modelList,
       h("p", { class: "small muted", style: "margin-top:4px" }, "Sebaiknya model yang bisa membaca gambar. Model teks saja tetap bisa dipakai dengan data grafik manual atau database soal.")),
     baseUrlWrap,
     h("div", null,

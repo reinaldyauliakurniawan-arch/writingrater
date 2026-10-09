@@ -27,6 +27,7 @@ const ERRORS = [
     'INVALID_IMAGE' => [400, 'Gambar harus PNG, JPG, atau WEBP dan maksimal 5 MB.'],
     'FORBIDDEN' => [403, 'Halaman ini khusus admin.'],
     'LLM_NOT_CONFIGURED' => [503, 'Layanan penilaian belum dikonfigurasi. Hubungi admin.'],
+    'MODELS_FAILED' => [400, 'Daftar model gagal diambil: {detail}. Nama model tetap bisa diketik manual.'],
     'SETTINGS_TEST_FAILED' => [400, 'Tes koneksi gagal: {detail}. Pengaturan tidak disimpan.'],
 ];
 

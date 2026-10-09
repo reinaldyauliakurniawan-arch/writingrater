@@ -35,6 +35,7 @@ function api_routes(): array
         ['GET', '#^/api/settings$#', 'api_get_settings'],
         ['PUT', '#^/api/settings$#', 'api_put_settings'],
         ['POST', '#^/api/settings/test$#', 'api_test_settings'],
+        ['POST', '#^/api/settings/models$#', 'api_list_models'],
     ];
 }
 
@@ -374,11 +375,11 @@ function api_get_settings(): JsonResponse
 }
 
 /** Input pengaturan: [provider, model, baseUrl|null, apiKey|null]. */
-function settings_input(): array
+function settings_input(bool $requireModel = true): array
 {
     $body = request_json();
     $provider = input_enum($body, 'provider', PROVIDERS);
-    $model = input_str($body, 'model', 200, true, 1);
+    $model = (string) input_str($body, 'model', 200, $requireModel, $requireModel ? 1 : 0);
     $baseUrl = input_str($body, 'base_url', 500, false) ?: null;
     $apiKey = input_str($body, 'api_key', 500, false) ?: null;
     if (requires_base_url($provider)) {
@@ -387,6 +388,23 @@ function settings_input(): array
         $baseUrl = null;
     }
     return [$provider, $model, $baseUrl, $apiKey];
+}
+
+/** Daftar model yang tersedia untuk key ini (key baru dari form, atau key tersimpan). */
+function api_list_models(): JsonResponse
+{
+    require_once APP_DIR . '/llm/client.php';
+    require_admin();
+    release_session();
+    [$provider, $model, $baseUrl, $apiKey] = settings_input(false);
+    $apiKey ??= stored_api_key();
+    if (!$apiKey) throw new AppError('SETTINGS_TEST_FAILED', 'API key belum diisi');
+    try {
+        $models = list_provider_models(['provider' => $provider, 'model' => $model, 'apiKey' => $apiKey, 'baseUrl' => $baseUrl]);
+    } catch (Throwable $e) {
+        throw new AppError('MODELS_FAILED', $e->getMessage());
+    }
+    return ok(['models' => $models]);
 }
 
 function api_test_settings(): JsonResponse

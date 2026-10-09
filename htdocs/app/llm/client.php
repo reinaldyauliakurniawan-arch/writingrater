@@ -414,3 +414,35 @@ function llm_structured(array $call): array
 {
     return llm_structured_many([$call])[0];
 }
+
+/**
+ * Daftar model chat dari provider (dipakai pemilih model di Pengaturan). Hasil: daftar id model, urut abjad.
+ */
+function list_provider_models(array $llm): array
+{
+    $key = $llm['apiKey'];
+    [$url, $headers] = match ($llm['provider']) {
+        'anthropic' => ['https://api.anthropic.com/v1/models?limit=1000', ['x-api-key: ' . $key, 'anthropic-version: 2023-06-01']],
+        'openai' => ['https://api.openai.com/v1/models', ['Authorization: Bearer ' . $key]],
+        'google' => ['https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', ['x-goog-api-key: ' . $key]],
+        default => [rtrim((string) $llm['baseUrl'], '/') . '/models', ['Authorization: Bearer ' . $key]],
+    };
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => $headers, CURLOPT_TIMEOUT => 20, CURLOPT_CONNECTTIMEOUT => 10]);
+    $res = curl_result($ch, (string) curl_exec($ch), $key, curl_errno($ch));
+
+    if ($llm['provider'] === 'google') {
+        $ids = [];
+        foreach ($res['models'] ?? [] as $m) {
+            if (in_array('generateContent', $m['supportedGenerationMethods'] ?? [], true)) $ids[] = preg_replace('#^models/#', '', $m['name']);
+        }
+    } else {
+        $ids = array_column($res['data'] ?? [], 'id');
+    }
+    // Buang model yang jelas bukan model chat (embedding, rerank, gambar, suara, moderasi).
+    $ids = array_values(array_filter($ids, fn($id) => is_string($id)
+        && !preg_match('/embed|rerank|retriev|guard|safety|moderation|whisper|tts|dall-e|image|audio|realtime|transcribe|clip|ocr|parse|reward|translate/i', $id)));
+    if ($llm['provider'] === 'openai') $ids = array_values(array_filter($ids, fn($id) => preg_match('/^(gpt|o\d|chatgpt)/', $id)));
+    sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
+    return $ids;
+}
