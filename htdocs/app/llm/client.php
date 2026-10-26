@@ -467,7 +467,7 @@ function llm_structured_many(array $calls): array
             throw new AppError('LLM_FAILED');
         }
         $pending = $retry;
-        if ($pending && !config('llm_mock')) sleep(2);
+        if ($pending && !config('llm_mock')) usleep(2_000_000); // sleep() dimatikan di InfinityFree
     }
     ksort($results);
     return $results;
