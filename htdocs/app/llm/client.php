@@ -278,6 +278,22 @@ function curl_result($ch, string $body, string $apiKey, int $curlCode = CURLE_OK
  */
 function llm_http_many(array $llm, array $requests): array
 {
+    // Sebagian shared hosting (mis. InfinityFree) mematikan curl_multi_*: kirim satu per satu.
+    if (!function_exists('curl_multi_exec')) {
+        $out = [];
+        foreach ($requests as $i => $req) {
+            $ch = curl_handle($req);
+            try {
+                $body = (string) curl_exec($ch);
+                $out[$i] = ['ok' => curl_result($ch, $body, $llm['apiKey'], curl_errno($ch))];
+            } catch (Throwable $e) {
+                $out[$i] = ['error' => $e];
+            }
+            curl_close($ch);
+        }
+        return $out;
+    }
+
     $mh = curl_multi_init();
     $handles = [];
     foreach ($requests as $i => $req) {
