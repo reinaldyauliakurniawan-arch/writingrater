@@ -34,6 +34,13 @@ function config(?string $key = null): mixed
 
 ini_set('display_errors', config('debug') ? '1' : '0');
 error_reporting(E_ALL);
+// Log error ke storage/logs (tertutup .htaccess) supaya bisa dibaca lewat FTP di shared hosting.
+$logDir = dirname(APP_DIR) . '/storage/logs';
+if (is_dir($logDir) || @mkdir($logDir, 0775, true)) {
+    ini_set('log_errors', '1');
+    ini_set('error_log', $logDir . '/php-error.log');
+}
+unset($logDir);
 date_default_timezone_set('UTC'); // semua waktu di database UTC; tampilan dikonversi ke Asia/Jakarta
 
 require APP_DIR . '/errors.php';

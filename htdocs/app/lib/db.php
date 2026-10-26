@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 // Nama tabel huruf kecil supaya sama di Windows (Laragon) dan Linux (hosting).
 
-function db(): PDO
+function db(bool $reconnect = false): PDO
 {
     static $pdo = null;
-    if ($pdo) return $pdo;
+    if ($pdo && !$reconnect) return $pdo;
     $c = config('db');
     $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $c['host'], (int) ($c['port'] ?? 3306), $c['name']);
     $pdo = new PDO($dsn, $c['user'], $c['pass'], [
@@ -19,26 +19,37 @@ function db(): PDO
     return $pdo;
 }
 
+/**
+ * prepare + execute. Hosting memutus koneksi yang menganggur selama menunggu AI
+ * ("MySQL server has gone away"): sambung ulang lalu coba sekali lagi.
+ */
+function db_run(string $sql, array $params): PDOStatement
+{
+    try {
+        $st = db()->prepare($sql);
+        $st->execute($params);
+    } catch (PDOException $e) {
+        if (!in_array($e->errorInfo[1] ?? null, [2006, 2013], true) && !str_contains($e->getMessage(), 'gone away')) throw $e;
+        $st = db(true)->prepare($sql);
+        $st->execute($params);
+    }
+    return $st;
+}
+
 function db_one(string $sql, array $params = []): ?array
 {
-    $st = db()->prepare($sql);
-    $st->execute($params);
-    $row = $st->fetch();
+    $row = db_run($sql, $params)->fetch();
     return $row === false ? null : $row;
 }
 
 function db_all(string $sql, array $params = []): array
 {
-    $st = db()->prepare($sql);
-    $st->execute($params);
-    return $st->fetchAll();
+    return db_run($sql, $params)->fetchAll();
 }
 
 function db_exec(string $sql, array $params = []): int
 {
-    $st = db()->prepare($sql);
-    $st->execute($params);
-    return $st->rowCount();
+    return db_run($sql, $params)->rowCount();
 }
 
 /** INSERT dari array kolom => nilai. */

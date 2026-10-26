@@ -4,6 +4,9 @@
 # Gambar yang diunggah pengguna (lokal maupun hosting)
 storage/uploads/
 
+# Log error PHP
+/htdocs/storage/logs/
+
 # PDF sumber soal (tidak ikut repo)
 /books
 
