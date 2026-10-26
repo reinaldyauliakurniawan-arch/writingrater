@@ -54,7 +54,7 @@ function list_questions(array $user, ?string $taskType = null): array
 }
 
 /**
- * Impor soal bawaan dari app/data/questions (40 soal Cambridge 15–19). Soal yang namanya sudah ada dilewati.
+ * Impor soal bawaan dari app/data/questions (56 soal Cambridge 15–21). Soal yang namanya sudah ada dilewati.
  * Mengembalikan jumlah soal baru.
  */
 function seed_questions(?string $createdById): int

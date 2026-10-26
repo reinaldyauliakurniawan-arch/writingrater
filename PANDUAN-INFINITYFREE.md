@@ -35,7 +35,7 @@ Folder `app/` dan `storage/` otomatis tertutup dari akses langsung lewat `.htacc
 
 1. Buka `https://domainkamu/install`.
 2. Pastikan status "Koneksi database: berhasil", lalu klik **Pasang / perbarui database**.
-   Langkah ini membuat tabel dan mengimpor 40 soal Cambridge 15–19 beserta gambarnya.
+   Langkah ini membuat tabel dan mengimpor 56 soal Cambridge 15–21 beserta gambarnya.
 3. Buka `https://domainkamu/register` dan daftar memakai email admin dari `config.php`.
 4. Masuk ke **Pengaturan**, isi provider, model, dan API key AI, klik **Tes koneksi**, lalu **Simpan**.
 

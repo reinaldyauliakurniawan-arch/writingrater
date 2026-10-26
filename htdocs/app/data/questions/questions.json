@@ -1303,5 +1303,564 @@
         "prompt_text": "In many countries nowadays, consumers can go to a supermarket and buy food produced all over the world.\n\nDo you think this is a positive or negative development?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
         "image_file": null,
         "extracted_data": null
+    },
+    {
+        "name": "Cambridge 20 Test 1 Task 1",
+        "task_type": "task1_academic",
+        "prompt_text": "The first table below shows changes in the total population of New York City from 1800 to 2000. The second and third tables show changes in the population of the five districts of the city (Manhattan, Brooklyn, Bronx, Queens, Staten Island) over the same period.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+        "image_file": "cambridge-20-test-1-task-1.png",
+        "extracted_data": {
+            "notes": [],
+            "title": "Population of New York City and its districts, 1800–2000",
+            "units": "people / % of total population",
+            "tables": [
+                {
+                    "name": "New York City (all five districts)",
+                    "rows": [
+                        {
+                            "label": "1800",
+                            "values": [
+                                "79,216"
+                            ]
+                        },
+                        {
+                            "label": "1900",
+                            "values": [
+                                "3,437,202"
+                            ]
+                        },
+                        {
+                            "label": "2000",
+                            "values": [
+                                "8,009,185"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "Population"
+                    ]
+                },
+                {
+                    "name": "Manhattan",
+                    "rows": [
+                        {
+                            "label": "1800",
+                            "values": [
+                                "60,515",
+                                "76%"
+                            ]
+                        },
+                        {
+                            "label": "1900",
+                            "values": [
+                                "1,850,093",
+                                "54%"
+                            ]
+                        },
+                        {
+                            "label": "2000",
+                            "values": [
+                                "1,538,096",
+                                "19%"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "Population",
+                        "% of total population"
+                    ]
+                },
+                {
+                    "name": "Other districts (Brooklyn, Bronx, Queens, Staten Island)",
+                    "rows": [
+                        {
+                            "label": "1800",
+                            "values": [
+                                "18,701",
+                                "24%"
+                            ]
+                        },
+                        {
+                            "label": "1900",
+                            "values": [
+                                "1,587,109",
+                                "46%"
+                            ]
+                        },
+                        {
+                            "label": "2000",
+                            "values": [
+                                "6,471,089",
+                                "81%"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "Population",
+                        "% of total population"
+                    ]
+                }
+            ],
+            "chart_type": "table",
+            "map_changes": [],
+            "process_steps": []
+        }
+    },
+    {
+        "name": "Cambridge 20 Test 1 Task 2",
+        "task_type": "task2",
+        "prompt_text": "Access to clean water is a basic human right. Therefore, every home should have a water supply that is provided free of charge.\n\nDo you agree or disagree?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
+        "image_file": null,
+        "extracted_data": null
+    },
+    {
+        "name": "Cambridge 20 Test 2 Task 1",
+        "task_type": "task1_academic",
+        "prompt_text": "The plans below show the site of a farm in 1950 and the same site today.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+        "image_file": "cambridge-20-test-2-task-1.png",
+        "extracted_data": {
+            "notes": [
+                "Today there are no sheep on the farm."
+            ],
+            "title": "Beechwood Farm: 1950 and today",
+            "units": "",
+            "tables": [],
+            "chart_type": "map",
+            "map_changes": [
+                "The track from the main road through the farm has become a road, following the same route (including the triangle in the middle).",
+                "The large sheep field north-east of the track has gone; that area now has a camping field (with a tree and tents), solar panels and a parking area.",
+                "A parking area and a farm shop have been added beside the main road at the farm entrance.",
+                "A second parking area has been added on the east side, next to the road.",
+                "The barn has been replaced by holiday cottages; a smaller new barn has been built at the southern end of the road, below the triangle.",
+                "Unchanged: the main road, the river along the south-west and south, fruit trees, soft fruits, vegetables, the farmhouse and the chickens."
+            ],
+            "process_steps": []
+        }
+    },
+    {
+        "name": "Cambridge 20 Test 2 Task 2",
+        "task_type": "task2",
+        "prompt_text": "In many countries, primary and secondary schools close for two months or more in the summer holidays.\n\nWhat is the value of long school holidays?\n\nWhat are the arguments in favour of shorter school holidays?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
+        "image_file": null,
+        "extracted_data": null
+    },
+    {
+        "name": "Cambridge 20 Test 3 Task 1",
+        "task_type": "task1_academic",
+        "prompt_text": "The charts below give information about a public library in a town called Little Chalfont.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+        "image_file": "cambridge-20-test-3-task-1.png",
+        "extracted_data": {
+            "notes": [
+                "Bar chart values read from the graph; approximate."
+            ],
+            "title": "Little Chalfont Library",
+            "units": "% / number of loans",
+            "tables": [
+                {
+                    "name": "Age of library members (2016), %",
+                    "rows": [
+                        {
+                            "label": "Children",
+                            "values": [
+                                "22"
+                            ]
+                        },
+                        {
+                            "label": "Young adults 13–17",
+                            "values": [
+                                "15"
+                            ]
+                        },
+                        {
+                            "label": "Adults 18–64",
+                            "values": [
+                                "51"
+                            ]
+                        },
+                        {
+                            "label": "Adults 65 and over",
+                            "values": [
+                                "12"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "%"
+                    ]
+                },
+                {
+                    "name": "Total loans by category (2016)",
+                    "rows": [
+                        {
+                            "label": "Children's fiction",
+                            "values": [
+                                "38%"
+                            ]
+                        },
+                        {
+                            "label": "Children's non-fiction",
+                            "values": [
+                                "6%"
+                            ]
+                        },
+                        {
+                            "label": "Children's DVDs",
+                            "values": [
+                                "1%"
+                            ]
+                        },
+                        {
+                            "label": "Young adults",
+                            "values": [
+                                "2%"
+                            ]
+                        },
+                        {
+                            "label": "Adult fiction",
+                            "values": [
+                                "38%"
+                            ]
+                        },
+                        {
+                            "label": "Adult non-fiction",
+                            "values": [
+                                "13%"
+                            ]
+                        },
+                        {
+                            "label": "Adult audio books",
+                            "values": [
+                                "2%"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "%"
+                    ]
+                },
+                {
+                    "name": "Total number of loans (2007–2016)",
+                    "rows": [
+                        {
+                            "label": "Loans",
+                            "values": [
+                                "15,800",
+                                "19,000",
+                                "19,000",
+                                "20,700",
+                                "21,000",
+                                "20,700",
+                                "19,700",
+                                "20,700",
+                                "21,300",
+                                "21,700"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "2007",
+                        "2008",
+                        "2009",
+                        "2010",
+                        "2011",
+                        "2012",
+                        "2013",
+                        "2014",
+                        "2015",
+                        "2016"
+                    ]
+                }
+            ],
+            "chart_type": "mixed",
+            "map_changes": [],
+            "process_steps": []
+        }
+    },
+    {
+        "name": "Cambridge 20 Test 3 Task 2",
+        "task_type": "task2",
+        "prompt_text": "Some people have decided to reduce the number of times they fly every year or to stop flying altogether.\n\nDo you think the environmental benefits of this development outweigh the disadvantages for individuals and businesses?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
+        "image_file": null,
+        "extracted_data": null
+    },
+    {
+        "name": "Cambridge 20 Test 4 Task 1",
+        "task_type": "task1_academic",
+        "prompt_text": "The diagram below shows how fabric is manufactured from bamboo.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+        "image_file": "cambridge-20-test-4-task-1.png",
+        "extracted_data": {
+            "notes": [
+                "Eight numbered stages, then the final products (9)."
+            ],
+            "title": "How bamboo fabric is made",
+            "units": "",
+            "tables": [],
+            "chart_type": "process",
+            "map_changes": [],
+            "process_steps": [
+                "Plant bamboo plants (spring).",
+                "Harvest the bamboo (autumn).",
+                "Cut the stems into strips.",
+                "Crush the strips to make liquid pulp.",
+                "Filter: separate long fibres from the liquid.",
+                "Soften the fibres by adding water and amine oxide.",
+                "Spin the fibres to make yarn.",
+                "Weave the yarn to make fabric.",
+                "Final products: clothing such as T-shirts and socks."
+            ]
+        }
+    },
+    {
+        "name": "Cambridge 20 Test 4 Task 2",
+        "task_type": "task2",
+        "prompt_text": "Many aspects of the way people dress today are influenced by global fashion trends.\n\nHow has global fashion become such a strong influence on people's lives?\n\nDo you think this is a positive or negative development?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
+        "image_file": null,
+        "extracted_data": null
+    },
+    {
+        "name": "Cambridge 21 Test 1 Task 1",
+        "task_type": "task1_academic",
+        "prompt_text": "The graph below gives information about the number of jobs in four sectors of the economy in the US between 1960 and 2020.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+        "image_file": "cambridge-21-test-1-task-1.png",
+        "extracted_data": {
+            "notes": [
+                "Values read from the line graph; approximate."
+            ],
+            "title": "Number of jobs in four sectors of the economy in the US, 1960–2020",
+            "units": "millions of jobs",
+            "tables": [
+                {
+                    "name": "Jobs in millions",
+                    "rows": [
+                        {
+                            "label": "Manufacturing",
+                            "values": [
+                                "15",
+                                "20",
+                                "17",
+                                "13"
+                            ]
+                        },
+                        {
+                            "label": "Retail",
+                            "values": [
+                                "6",
+                                "10",
+                                "15",
+                                "16"
+                            ]
+                        },
+                        {
+                            "label": "Agriculture",
+                            "values": [
+                                "6",
+                                "3",
+                                "3",
+                                "2"
+                            ]
+                        },
+                        {
+                            "label": "Healthcare",
+                            "values": [
+                                "2",
+                                "5",
+                                "11",
+                                "16"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "1960",
+                        "1980",
+                        "2000",
+                        "2020"
+                    ]
+                }
+            ],
+            "chart_type": "line",
+            "map_changes": [],
+            "process_steps": []
+        }
+    },
+    {
+        "name": "Cambridge 21 Test 1 Task 2",
+        "task_type": "task2",
+        "prompt_text": "The best way to provide enough homes in large cities is to build tall apartment blocks.\n\nTo what extent do you agree or disagree with this statement?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
+        "image_file": null,
+        "extracted_data": null
+    },
+    {
+        "name": "Cambridge 21 Test 2 Task 1",
+        "task_type": "task1_academic",
+        "prompt_text": "The plans below show a college café before it was redesigned and how it looks now.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+        "image_file": "cambridge-21-test-2-task-1.png",
+        "extracted_data": {
+            "notes": [],
+            "title": "College café before redesign and today",
+            "units": "",
+            "tables": [],
+            "chart_type": "map",
+            "map_changes": [
+                "The serving area for all food and drink (next to the kitchen) has become a hot meals counter.",
+                "The two staff dining rooms have been replaced by a take away food counter and a coffee bar.",
+                "A salad bar has been added along the left (west) wall of the seating area.",
+                "The bin has been replaced by recycling bins on the right (east) wall.",
+                "A new door on the south side leads outside, where outdoor seating (tables and chairs) has been added along the building.",
+                "A barbecue has been added outside at the bottom-left corner.",
+                "Unchanged: the kitchen, the main tables and chairs area, the toilets and the entrance doors."
+            ],
+            "process_steps": []
+        }
+    },
+    {
+        "name": "Cambridge 21 Test 2 Task 2",
+        "task_type": "task2",
+        "prompt_text": "Some people say that in the digital age, theatres and cinemas are no longer important as people can watch all the entertainment they want online. Others argue that theatres and cinemas are still important both economically and culturally.\n\nDiscuss both these views and give your own opinion.\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
+        "image_file": null,
+        "extracted_data": null
+    },
+    {
+        "name": "Cambridge 21 Test 3 Task 1",
+        "task_type": "task1_academic",
+        "prompt_text": "The diagram below shows how one type of desert, known as a rain-shadow desert, is formed.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+        "image_file": "cambridge-21-test-3-task-1.png",
+        "extracted_data": {
+            "notes": [
+                "Seven stages.",
+                "The distance from the coast to the desert is thousands of kilometres."
+            ],
+            "title": "The formation of rain-shadow deserts",
+            "units": "",
+            "tables": [],
+            "chart_type": "process",
+            "map_changes": [],
+            "process_steps": [
+                "Winds approach the coast from the sea.",
+                "The winds are pushed upwards by the mountains.",
+                "Moist air rises and cools on the windward side.",
+                "Clouds form.",
+                "Rain falls over the windward side of the mountain.",
+                "Dry air continues over the mountain to the leeward side.",
+                "Dry winds reach inland areas, where a rain-shadow desert forms."
+            ]
+        }
+    },
+    {
+        "name": "Cambridge 21 Test 3 Task 2",
+        "task_type": "task2",
+        "prompt_text": "All university undergraduate courses should include a period of time spent studying abroad or doing a work placement.\n\nDo you think the advantages of this would outweigh the disadvantages?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
+        "image_file": null,
+        "extracted_data": null
+    },
+    {
+        "name": "Cambridge 21 Test 4 Task 1",
+        "task_type": "task1_academic",
+        "prompt_text": "The chart and table below show the results of a survey of library users at a university.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+        "image_file": "cambridge-21-test-4-task-1.png",
+        "extracted_data": {
+            "notes": [],
+            "title": "Categories of library users; Library user satisfaction (%)",
+            "units": "%",
+            "tables": [
+                {
+                    "name": "Categories of library users",
+                    "rows": [
+                        {
+                            "label": "Full-time undergraduate",
+                            "values": [
+                                "44%"
+                            ]
+                        },
+                        {
+                            "label": "Full-time postgraduate",
+                            "values": [
+                                "25%"
+                            ]
+                        },
+                        {
+                            "label": "Part-time postgraduate",
+                            "values": [
+                                "16%"
+                            ]
+                        },
+                        {
+                            "label": "Distance learning (all courses)",
+                            "values": [
+                                "8%"
+                            ]
+                        },
+                        {
+                            "label": "Academic staff",
+                            "values": [
+                                "7%"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "%"
+                    ]
+                },
+                {
+                    "name": "Library user satisfaction (%)",
+                    "rows": [
+                        {
+                            "label": "Library opening hours",
+                            "values": [
+                                "65",
+                                "35",
+                                "0"
+                            ]
+                        },
+                        {
+                            "label": "Helpfulness of staff",
+                            "values": [
+                                "95",
+                                "5",
+                                "0"
+                            ]
+                        },
+                        {
+                            "label": "Availability of books",
+                            "values": [
+                                "50",
+                                "40",
+                                "10"
+                            ]
+                        },
+                        {
+                            "label": "Availability of journals",
+                            "values": [
+                                "45",
+                                "35",
+                                "20"
+                            ]
+                        },
+                        {
+                            "label": "Reliability of wi-fi",
+                            "values": [
+                                "48",
+                                "33",
+                                "19"
+                            ]
+                        }
+                    ],
+                    "columns": [
+                        "Very satisfied",
+                        "Fairly satisfied",
+                        "Not satisfied"
+                    ]
+                }
+            ],
+            "chart_type": "mixed",
+            "map_changes": [],
+            "process_steps": []
+        }
+    },
+    {
+        "name": "Cambridge 21 Test 4 Task 2",
+        "task_type": "task2",
+        "prompt_text": "Some people argue that primary schools focus too much on formal learning.\n\nTo what extent do you agree with this opinion?\n\nHow important do you think it is for children to play as well as learn in the primary school classroom?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
+        "image_file": null,
+        "extracted_data": null
     }
 ]

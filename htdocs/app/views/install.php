@@ -24,7 +24,7 @@
         <?php if ($allowed): ?>
             <form method="post" action="/install" class="card stack" data-once>
                 <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-                <p>Tombol ini membuat tabel yang belum ada, memperbarui tabel lama, dan mengimpor 40 soal Cambridge 15–19 (soal yang sudah ada dilewati). Aman dijalankan berkali-kali; data yang ada tidak dihapus.</p>
+                <p>Tombol ini membuat tabel yang belum ada, memperbarui tabel lama, dan mengimpor 56 soal Cambridge 15–21 (soal yang sudah ada dilewati). Aman dijalankan berkali-kali; data yang ada tidak dihapus.</p>
                 <button type="submit" class="btn-primary">Pasang / perbarui database</button>
             </form>
         <?php else: ?>
