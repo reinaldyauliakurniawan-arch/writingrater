@@ -330,7 +330,8 @@ function llm_label(array $llm): string
 function llm_active(): array
 {
     if (config('llm_mock')) return ['provider' => 'mock', 'model' => 'mock', 'apiKey' => '', 'baseUrl' => null];
-    $llm = get_settings()['llm'];
+    require_once APP_DIR . '/lib/settings.php';
+    $llm = request_llm_settings();
     if (!$llm) throw new AppError('LLM_NOT_CONFIGURED');
     return $llm;
 }

@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
-require_once APP_DIR . '/lib/crypto.php';
+// Pengaturan AI milik masing-masing pengguna. Provider, model, base URL, dan API key disimpan di
+// browser (localStorage) dan dikirim bersama setiap request AI lewat header X-LLM-*.
+// Server hanya meneruskan ke provider: tidak menyimpan dan tidak mencatat API key.
 
 const PROVIDERS = ['anthropic', 'openai', 'google', 'openai_compatible'];
 const PROVIDER_OPTIONS = [
@@ -26,81 +28,22 @@ function is_valid_base_url(string $url): bool
 }
 
 /**
- * Pengaturan aktif: appsetting (key terisi) -> config.php llm -> null.
- * ['llm' => ['provider','model','apiKey','baseUrl']|null, 'source' => database|config|none, 'row' => array|null]
+ * Pengaturan AI dari header request (diisi app.js dari localStorage), atau null kalau belum lengkap.
+ * ['provider','model','apiKey','baseUrl']
  */
-function get_settings(bool $fresh = false): array
+function request_llm_settings(bool $requireModel = true): ?array
 {
-    static $cache = null;
-    if ($cache && !$fresh) return $cache;
-    $row = db_one('SELECT * FROM `appsetting` WHERE id = 1');
-    if ($row && $row['apiKeyEncrypted']) {
-        return $cache = [
-            'llm' => [
-                'provider' => $row['provider'],
-                'model' => $row['model'],
-                'apiKey' => decrypt_secret($row['apiKeyEncrypted']),
-                'baseUrl' => $row['baseUrl'],
-            ],
-            'source' => 'database',
-            'row' => $row,
-        ];
-    }
-    $c = (array) config('llm');
-    $p = $c['provider'] ?? '';
-    $ok = in_array($p, PROVIDERS, true) && !empty($c['model']) && !empty($c['api_key'])
-        && (!requires_base_url($p) || !empty($c['base_url']));
-    $llm = $ok ? ['provider' => $p, 'model' => $c['model'], 'apiKey' => $c['api_key'], 'baseUrl' => $c['base_url'] ?: null] : null;
-    return $cache = ['llm' => $llm, 'source' => $llm ? 'config' : 'none', 'row' => $row];
-}
-
-function public_settings(): array
-{
-    $s = get_settings();
-    $row = $s['row'];
-    $active = $s['source'] === 'database' ? $row : null;
-    return [
-        'provider' => $active['provider'] ?? $s['llm']['provider'] ?? $row['provider'] ?? null,
-        'model' => $active['model'] ?? $s['llm']['model'] ?? $row['model'] ?? null,
-        'base_url' => $active['baseUrl'] ?? $s['llm']['baseUrl'] ?? $row['baseUrl'] ?? null,
-        'api_key_last4' => $row['apiKeyLast4'] ?? null,
-        'has_api_key' => !empty($row['apiKeyEncrypted']),
-        'last_test_ok' => isset($row['lastTestOk']) ? (bool) $row['lastTestOk'] : null,
-        'last_test_at' => iso($row['lastTestAt'] ?? null),
-        'updated_at' => iso($row['updatedAt'] ?? null),
-        'updated_at_text' => format_date($row['updatedAt'] ?? null),
-        'updated_by' => $row['updatedBy'] ?? null,
-        'source' => $s['source'],
-    ];
-}
-
-function stored_api_key(): ?string
-{
-    $row = get_settings()['row'];
-    return !empty($row['apiKeyEncrypted']) ? decrypt_secret($row['apiKeyEncrypted']) : null;
-}
-
-function save_settings(string $provider, string $model, ?string $baseUrl, ?string $apiKey, ?bool $testOk, string $adminEmail): void
-{
-    $data = [
-        'provider' => $provider,
-        'model' => $model,
-        'baseUrl' => $baseUrl,
-        'updatedBy' => $adminEmail,
-        'updatedAt' => now_utc(),
-    ];
-    if ($apiKey !== null) {
-        $data['apiKeyEncrypted'] = encrypt_secret($apiKey);
-        $data['apiKeyLast4'] = substr($apiKey, -4);
-    }
-    if ($testOk !== null) {
-        $data['lastTestOk'] = $testOk ? 1 : 0;
-        $data['lastTestAt'] = now_utc();
-    }
-    if (db_one('SELECT id FROM `appsetting` WHERE id = 1')) {
-        db_update('appsetting', $data, ['id' => 1]);
+    $hdr = fn(string $name) => trim((string) ($_SERVER['HTTP_X_LLM_' . $name] ?? ''));
+    $provider = $hdr('PROVIDER');
+    $model = $hdr('MODEL');
+    $apiKey = $hdr('KEY');
+    $baseUrl = $hdr('BASE_URL');
+    if (!in_array($provider, PROVIDERS, true) || ($requireModel && $model === '') || $apiKey === '') return null;
+    if (strlen($model) > 200 || strlen($apiKey) > 500 || strlen($baseUrl) > 500) return null;
+    if (requires_base_url($provider)) {
+        if (!is_valid_base_url($baseUrl)) return null;
     } else {
-        db_insert('appsetting', ['id' => 1] + $data);
+        $baseUrl = '';
     }
-    get_settings(true);
+    return ['provider' => $provider, 'model' => $model, 'apiKey' => $apiKey, 'baseUrl' => $baseUrl ?: null];
 }

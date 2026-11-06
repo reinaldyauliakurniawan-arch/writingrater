@@ -17,9 +17,9 @@ Di komputer, salin `htdocs/config.sample.php` menjadi `htdocs/config.php`, lalu 
 
 - `db`: host, name, user, pass dari langkah 1 (`port` biarkan 3306).
 - `admin_emails`: email akun yang akan jadi admin (huruf kecil).
-- `encryption_key`: 64 karakter hex. Buat sekali, misalnya di <https://www.random.org/bytes/> (32 byte, format hex, hapus spasinya).
-  **Jangan diganti setelah dipakai**, karena API key AI yang tersimpan tidak akan bisa dibaca lagi.
 - Bagian lain biarkan default. `llm_mock` dan `debug` harus `false`.
+- API key AI **tidak** diisi di `config.php` maupun database. Setiap pengguna mengisi key miliknya sendiri di menu
+  **Pengaturan**; key tersimpan di browser pengguna itu saja.
 
 ## 3. Unggah file
 
@@ -37,7 +37,8 @@ Folder `app/` dan `storage/` otomatis tertutup dari akses langsung lewat `.htacc
 2. Pastikan status "Koneksi database: berhasil", lalu klik **Pasang / perbarui database**.
    Langkah ini membuat tabel dan mengimpor 56 soal Cambridge 15–21 beserta gambarnya.
 3. Buka `https://domainkamu/register` dan daftar memakai email admin dari `config.php`.
-4. Masuk ke **Pengaturan**, isi provider, model, dan API key AI, klik **Tes koneksi**, lalu **Simpan**.
+4. Setiap pengguna membuka **Pengaturan**, mengisi provider, model, dan API key AI miliknya, klik **Tes koneksi**,
+   lalu **Simpan di browser ini**. Key tidak dikirim ke pengguna lain dan tidak disimpan di server.
 
 Halaman `/install` aman dibuka lagi kapan saja (misalnya setelah update aplikasi). Setelah ada pengguna, hanya admin yang bisa menjalankannya.
 
@@ -50,6 +51,13 @@ dijalankan sebagai permintaan terpisah, dan satu jawaban AI ditunggu paling lama
 - Model raksasa yang lambat (contoh: `nvidia/nemotron-3-ultra-550b` lewat NVIDIA) tidak menjawab penilaian
   dalam 150 detik saat diuji, jadi tidak cocok dipakai.
 - Model teks saja tetap bisa dipakai. Task 1 dikerjakan lewat "Isi data manual" atau soal dari database soal.
+
+## Fitur Speaking
+
+- Wajib HTTPS (SSL aktif), karena browser hanya mengizinkan mikrofon di situs https.
+- Tidak ada yang perlu dipasang di hosting. Alat transkripsi (Whisper) diunduh sekali oleh browser examiner
+  dari CDN (jsdelivr dan huggingface.co) lalu tersimpan di browser itu. Audio tidak pernah diunggah ke hosting.
+- Sebelum ujian pertama, examiner membuka **Speaking → Cek perangkat** di laptop yang akan dipakai.
 
 ## Update aplikasi
 

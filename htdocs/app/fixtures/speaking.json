@@ -1,0 +1,19 @@
+{
+  "lr": {
+    "evidence": ["I really like", "it is very good place"],
+    "band": 6,
+    "summary": "You have enough vocabulary to talk about the topics at length and your meaning is clear. Some word choices are basic or slightly unnatural, and less common expressions are rare.",
+    "examples": [
+      { "quote": "I really like", "kind": "good", "note": "Natural spoken phrase used appropriately.", "correction": null },
+      { "quote": "very good place", "kind": "error", "note": "Very general adjective; a more precise word would show range.", "correction": "a wonderful place" }
+    ]
+  },
+  "gra": {
+    "evidence": ["it is very good place"],
+    "band": 5,
+    "summary": "Simple sentences are mostly controlled, but articles are often missing and complex sentences are rare.",
+    "examples": [
+      { "quote": "it is very good place", "kind": "error", "note": "Missing article before a singular noun.", "correction": "it is a very good place" }
+    ]
+  }
+}

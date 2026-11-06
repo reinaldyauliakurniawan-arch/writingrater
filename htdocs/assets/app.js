@@ -15,9 +15,47 @@ class ApiError extends Error {
   }
 }
 
+// ---------------------------------------------------------------- pengaturan AI di browser
+// Provider, model, base URL, dan API key milik pengguna disimpan di localStorage browser ini saja.
+// Dikirim ke server hanya untuk request yang memanggil AI; server tidak menyimpan atau mencatatnya.
+
+const LLM_STORE = "llmSettings";
+const AI_ENDPOINT = /\/(extract|grade|polish|assess)$/;
+
+function loadLlm() {
+  try {
+    const v = JSON.parse(localStorage.getItem(LLM_STORE) ?? "null");
+    return v && typeof v === "object" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLlm(v) {
+  try {
+    if (v) localStorage.setItem(LLM_STORE, JSON.stringify(v));
+    else localStorage.removeItem(LLM_STORE);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Header X-LLM-* dari pengaturan (dipakai juga oleh halaman Pengaturan dengan isi form). */
+function llmHeaders(s) {
+  if (!s) return {};
+  const out = {};
+  if (s.provider) out["X-LLM-Provider"] = s.provider;
+  if (s.model) out["X-LLM-Model"] = s.model.trim();
+  if (s.apiKey) out["X-LLM-Key"] = s.apiKey.trim();
+  if (s.baseUrl) out["X-LLM-Base-Url"] = s.baseUrl.trim();
+  return out;
+}
+
 /** fetch JSON: { data } -> data, { error } -> ApiError. PUT/PATCH/DELETE dikirim sebagai POST + override. */
-async function api(url, { method = "GET", json, body } = {}) {
+async function api(url, { method = "GET", json, body, llm } = {}) {
   const headers = { "X-CSRF-Token": CSRF, Accept: "application/json" };
+  Object.assign(headers, llmHeaders(llm ?? (AI_ENDPOINT.test(url) ? loadLlm() : null)));
   let sendMethod = method;
   if (["PUT", "PATCH", "DELETE"].includes(method)) {
     headers["X-HTTP-Method-Override"] = method;
@@ -37,6 +75,7 @@ async function api(url, { method = "GET", json, body } = {}) {
   if (!data) throw new ApiError("BAD_RESPONSE", "Respons server tidak terbaca. Muat ulang halaman lalu coba lagi.");
   if (!res.ok || data.error) {
     if (data.error?.code === "UNAUTHORIZED") location.href = "/login";
+    if (data.error?.code === "LLM_NOT_CONFIGURED") showLlmMissing();
     throw new ApiError(data.error?.code ?? "UNKNOWN", data.error?.message ?? "Terjadi kesalahan. Coba lagi.");
   }
   return data.data;
@@ -50,6 +89,16 @@ async function apiSteps(url, json, onProgress) {
     onProgress?.(r.message);
   }
   throw new ApiError("LLM_FAILED", "Proses terlalu lama. Coba lagi.");
+}
+
+/** Banner tetap di atas halaman dengan tautan ke Pengaturan (muncul saat AI dipakai tanpa API key). */
+function showLlmMissing() {
+  if (document.getElementById("llm-missing")) return;
+  const main = document.querySelector("main") ?? document.body;
+  main.prepend(h("div", { id: "llm-missing", class: "banner-warning", role: "alert", style: "margin-bottom:16px" },
+    "API key AI belum diisi di browser ini. ",
+    h("a", { href: "/settings", class: "semibold", style: "text-decoration:underline" }, "Buka Pengaturan"),
+    " untuk mengisi provider, model, dan API key kamu sendiri."));
 }
 
 const errorMessage = (e) => (e instanceof ApiError ? e.message : "Terjadi kesalahan. Coba lagi.");
@@ -1375,75 +1424,85 @@ function questionBank(root, initial) {
   render();
 }
 
-// ---------------------------------------------------------------- pengaturan AI (admin)
+// ---------------------------------------------------------------- pengaturan AI (milik browser ini)
 
-function settingsPage(root, { settings, providers }) {
-  let saved = settings;
+function settingsPage(root, { providers }) {
+  let saved = loadLlm();
   const st = {
-    provider: saved.provider ?? providers[0].value,
-    model: saved.model ?? "",
-    baseUrl: saved.base_url ?? "",
-    apiKey: "",
+    provider: saved?.provider ?? providers[0].value,
+    model: saved?.model ?? "",
+    baseUrl: saved?.baseUrl ?? "",
+    apiKey: saved?.apiKey ?? "",
     test: null,
-    busy: null,
-    error: null,
-    notice: null,
+    busy: false,
   };
   const opt = () => providers.find((p) => p.value === st.provider) ?? providers[0];
-  const signature = () => JSON.stringify([st.provider, st.model.trim(), opt().needsBaseUrl ? st.baseUrl.trim() : "", st.apiKey.trim()]);
-  const body = () => ({ provider: st.provider, model: st.model.trim(), base_url: opt().needsBaseUrl ? st.baseUrl.trim() : null, api_key: st.apiKey.trim() || null });
+  const current = () => ({ provider: st.provider, model: st.model.trim(), baseUrl: opt().needsBaseUrl ? st.baseUrl.trim() : "", apiKey: st.apiKey.trim() });
+  const signature = () => JSON.stringify(current());
+  const complete = () => {
+    const c = current();
+    return !!(c.model && c.apiKey && (!opt().needsBaseUrl || c.baseUrl));
+  };
+  const dirty = () => JSON.stringify(saved ? { provider: saved.provider, model: saved.model, baseUrl: saved.baseUrl ?? "", apiKey: saved.apiKey } : null) !== signature();
 
-  // Aturan sama dengan server: tes wajib kalau key baru diisi, atau key tersimpan dan provider/model/base URL berubah.
-  function canSave() {
-    const fieldsChanged = st.provider !== saved.provider || st.model.trim() !== (saved.model ?? "") || (opt().needsBaseUrl ? st.baseUrl.trim() : null) !== (saved.base_url ?? null);
-    const llmChanged = st.apiKey.trim() !== "" || (saved.has_api_key && fieldsChanged);
-    const passed = st.test?.ok === true && st.test.signature === signature();
-    return st.busy === null && (!llmChanged || passed);
-  }
+  const status = h("p", { class: "small", role: "status" });
+  const testResult = h("div");
+  const keyInfo = h("p", { class: "small muted", style: "margin-top:4px" });
+  const statusCard = h("div", { class: "card small" });
+
+  const describeKey = () => {
+    const k = st.apiKey.trim();
+    return k ? `Key: ${k.slice(0, 6)}…${k.slice(-4)} (${k.length} karakter).` : "Belum ada key.";
+  };
+
+  const drawStatus = () => setChildren(statusCard,
+    h("p", { class: "semibold" }, "Pengaturan aktif di browser ini"),
+    saved?.apiKey
+      ? h("ul", { class: "muted stack-sm", style: "margin-top:4px" },
+          h("li", null, "Model: ", h("span", { class: "semibold", style: "color:var(--ink)" }, `${saved.provider}:${saved.model}`)),
+          h("li", null, `Key berakhiran ${saved.apiKey.slice(-4)}`))
+      : h("p", { class: "muted", style: "margin-top:4px" }, "Belum diisi. Fitur penilaian AI belum bisa dipakai di browser ini."));
 
   const refresh = () => {
-    saveBtn.disabled = !canSave();
-    testBtn.disabled = st.busy !== null || !st.model.trim();
+    saveBtn.disabled = st.busy || !complete() || !dirty();
+    testBtn.disabled = st.busy || !complete();
+    fetchModelsBtn.disabled = st.busy || !st.apiKey.trim();
+    clearBtn.classList.toggle("hidden", !saved);
     setChildren(testResult, st.test && st.test.signature === signature()
       ? st.test.ok
         ? h("p", { class: "badge-accent semibold", style: "display:inline-block;padding:4px 12px" }, `Berhasil (${st.test.latency_ms} ms)`)
         : h("p", { class: "banner-error" }, st.test.error)
       : "");
-    const switched = saved.source !== "none" && (st.provider !== saved.provider || st.model.trim() !== (saved.model ?? ""));
-    warn.classList.toggle("hidden", !switched);
     keyInfo.textContent = describeKey();
+    drawStatus();
   };
 
   const testBtn = h("button", { type: "button", class: "btn-secondary", onclick: async () => {
-    st.busy = "test";
-    st.error = st.notice = null;
+    st.busy = true;
     testBtn.textContent = "Menguji…";
     refresh();
     const sig = signature();
     try {
-      st.test = { ...(await api("/api/settings/test", { method: "POST", json: body() })), signature: sig };
+      st.test = { ...(await api("/api/settings/test", { method: "POST", json: {}, llm: current() })), signature: sig };
     } catch (e) {
       st.test = { ok: false, latency_ms: 0, error: errorMessage(e), signature: sig };
     }
-    st.busy = null;
+    st.busy = false;
     testBtn.textContent = "Tes koneksi";
     refresh();
   } }, "Tes koneksi");
-  const testResult = h("div");
-  const warn = h("p", { class: "banner-warning hidden" }, "Mengganti model bisa mengubah hasil skor. Coba nilai beberapa jawaban contoh setelah menyimpan.");
-  const errBox = h("div");
-  const noticeBox = h("p", { class: "notice" });
-  const saveBtn = h("button", { type: "submit", class: "btn-primary" }, "Simpan");
 
-  const activeCard = () => h("div", { class: "card small" },
-    h("p", { class: "semibold" }, "Pengaturan aktif"),
-    saved.source === "none"
-      ? h("p", { class: "muted", style: "margin-top:4px" }, "Belum dikonfigurasi (database dan config.php kosong).")
-      : h("ul", { class: "muted stack-sm", style: "margin-top:4px" },
-          h("li", null, "Model: ", h("span", { class: "semibold", style: "color:var(--ink)" }, `${saved.provider}:${saved.model}`)),
-          h("li", null, `Sumber: ${saved.source}`),
-          saved.updated_at ? h("li", null, `Terakhir diubah oleh ${saved.updated_by ?? "-"} pada ${saved.updated_at_text}`) : null));
-  let active = activeCard();
+  const saveBtn = h("button", { type: "submit", class: "btn-primary" }, "Simpan di browser ini");
+  const clearBtn = h("button", { type: "button", class: "btn-secondary", onclick: () => {
+    saveLlm(null);
+    saved = null;
+    st.apiKey = "";
+    keyInput.value = "";
+    st.test = null;
+    status.className = "small notice";
+    status.textContent = "API key dihapus dari browser ini.";
+    refresh();
+  } }, "Hapus key dari browser ini");
 
   const baseUrlWrap = h("div", null,
     h("label", { class: "label", for: "baseUrl" }, "Base URL"),
@@ -1455,7 +1514,7 @@ function settingsPage(root, { settings, providers }) {
     fetchModelsBtn.disabled = true;
     fetchModelsBtn.textContent = "Mengambil…";
     try {
-      const { models } = await api("/api/settings/models", { method: "POST", json: body() });
+      const { models } = await api("/api/settings/models", { method: "POST", json: {}, llm: current() });
       const select = h("select", { class: "input", "aria-label": "Pilih model", onchange: (e) => {
         if (!e.target.value) return;
         st.model = e.target.value;
@@ -1469,50 +1528,28 @@ function settingsPage(root, { settings, providers }) {
       setChildren(modelList, h("p", { class: "banner-error" }, errorMessage(e)));
     }
     modelList.classList.remove("hidden");
-    fetchModelsBtn.disabled = false;
     fetchModelsBtn.textContent = "Ambil daftar model";
+    refresh();
   } }, "Ambil daftar model");
   // Bukan type="password": Chrome mengisi kolom password dengan password login tersimpan, sehingga
   // password login terkirim sebagai API key (HTTP 401). Teks disamarkan lewat CSS.
   const keyInput = h("input", { id: "apiKey", type: "text", name: "llm-provider-key", autocomplete: "off", spellcheck: "false",
-    "data-lpignore": "true", "data-1p-ignore": "true", class: "input secret", value: "",
-    placeholder: saved.has_api_key && saved.api_key_last4 ? `•••• ${saved.api_key_last4} (kosongkan untuk tetap memakai key ini)` : "",
+    "data-lpignore": "true", "data-1p-ignore": "true", class: "input secret", value: st.apiKey,
     oninput: (e) => { st.apiKey = e.target.value; refresh(); } });
-  const keyInfo = h("p", { class: "small muted", style: "margin-top:4px" });
   const keyToggle = h("button", { type: "button", class: "link-btn", onclick: () => {
     keyInput.classList.toggle("secret");
     keyToggle.textContent = keyInput.classList.contains("secret") ? "Tampilkan" : "Sembunyikan";
   } }, "Tampilkan");
-  const describeKey = () => {
-    const k = st.apiKey.trim();
-    if (k) return `Akan memakai key baru: ${k.slice(0, 6)}…${k.slice(-4)} (${k.length} karakter).`;
-    return saved.has_api_key && saved.api_key_last4 ? `Memakai key tersimpan yang berakhiran ${saved.api_key_last4}.` : "Belum ada key tersimpan.";
-  };
 
-  const form = h("form", { class: "card stack", onsubmit: async (e) => {
+  const form = h("form", { class: "card stack", onsubmit: (e) => {
     e.preventDefault();
-    if (!canSave()) return;
-    st.busy = "save";
-    st.error = st.notice = null;
-    saveBtn.textContent = "Menyimpan…";
-    refresh();
-    try {
-      saved = await api("/api/settings", { method: "PUT", json: body() });
-      st.apiKey = "";
-      keyInput.value = "";
-      keyInput.placeholder = saved.has_api_key && saved.api_key_last4 ? `•••• ${saved.api_key_last4} (kosongkan untuk tetap memakai key ini)` : "";
-      st.test = null;
-      st.notice = "Pengaturan disimpan dan langsung berlaku.";
-      const fresh = activeCard();
-      active.replaceWith(fresh);
-      active = fresh;
-    } catch (err) {
-      st.error = errorMessage(err);
-    }
-    st.busy = null;
-    saveBtn.textContent = "Simpan";
-    setChildren(errBox, errorBanner(st.error) ?? "");
-    noticeBox.textContent = st.notice ?? "";
+    if (!complete()) return;
+    const ok = saveLlm(current());
+    if (ok) saved = current();
+    status.className = ok ? "small notice" : "small text-danger";
+    status.textContent = ok
+      ? (st.test?.ok && st.test.signature === signature() ? "Tersimpan di browser ini." : "Tersimpan di browser ini. Disarankan klik Tes koneksi untuk memastikan key dan model benar.")
+      : "Browser menolak menyimpan (mode penyamaran atau penyimpanan diblokir).";
     refresh();
   } },
     h("div", null,
@@ -1525,19 +1562,25 @@ function settingsPage(root, { settings, providers }) {
         refresh();
       } }, providers.map((p) => h("option", { value: p.value, selected: p.value === st.provider }, p.label)))),
     h("div", null,
-      h("div", { class: "row", style: "justify-content:space-between" }, h("label", { class: "label", for: "model" }, "Model"), fetchModelsBtn),
-      modelInput, modelList,
-      h("p", { class: "small muted", style: "margin-top:4px" }, "Sebaiknya model yang bisa membaca gambar. Model teks saja tetap bisa dipakai dengan data grafik manual atau database soal.")),
-    baseUrlWrap,
-    h("div", null,
       h("div", { class: "row", style: "justify-content:space-between" }, h("label", { class: "label", for: "apiKey" }, "API key"), keyToggle),
       keyInput, keyInfo),
+    h("div", null,
+      h("div", { class: "row", style: "justify-content:space-between" }, h("label", { class: "label", for: "model" }, "Model"), fetchModelsBtn),
+      modelInput, modelList,
+      h("p", { class: "small muted", style: "margin-top:4px" }, "Sebaiknya model yang cepat dan bisa membaca gambar (mis. Gemini Flash). Model teks saja tetap bisa dipakai dengan data grafik manual atau database soal.")),
+    baseUrlWrap,
     h("div", { class: "stack-sm" }, h("div", null, testBtn), testResult),
-    warn, errBox, noticeBox, saveBtn,
+    h("div", { class: "row-sm" }, saveBtn, clearBtn),
+    status,
   );
   baseUrlWrap.classList.toggle("hidden", !opt().needsBaseUrl);
 
-  setChildren(root, h("div", { class: "stack-lg" }, active, form));
+  setChildren(root, h("div", { class: "stack-lg" },
+    h("div", { class: "banner-warning small stack-sm" },
+      h("p", { class: "semibold" }, "API key kamu hanya disimpan di browser ini."),
+      h("p", null, "Tidak disimpan di server dan tidak terlihat oleh pengguna lain. Setiap kali kamu memakai fitur AI, key dikirim lewat koneksi aman (HTTPS) ke server hanya untuk diteruskan ke provider AI, lalu langsung dilupakan."),
+      h("p", null, "Kalau pindah laptop/browser atau menghapus data browser, isi lagi di sini. Di komputer bersama, klik \"Hapus key dari browser ini\" setelah selesai.")),
+    statusCard, form));
   refresh();
 }
 

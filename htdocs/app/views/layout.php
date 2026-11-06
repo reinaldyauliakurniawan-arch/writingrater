@@ -3,6 +3,7 @@
 $user = current_user();
 $wide = !empty($vars['wide']);
 $v = '?v=' . filemtime(dirname(APP_DIR) . '/assets/app.js') . filemtime(dirname(APP_DIR) . '/assets/app.css');
+$speakingPage = str_starts_with((string) ($view ?? ''), 'speaking');
 ?><!doctype html>
 <html lang="id">
 <head>
@@ -17,6 +18,7 @@ $v = '?v=' . filemtime(dirname(APP_DIR) . '/assets/app.js') . filemtime(dirname(
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/app.css<?= $v ?>">
     <script src="/assets/app.js<?= $v ?>" defer></script>
+    <?php if ($speakingPage): ?><script src="/assets/speaking.js?v=<?= filemtime(dirname(APP_DIR) . '/assets/speaking.js') ?>" defer></script><?php endif; ?>
 </head>
 <body>
 <?php if ($pageTitle !== null): ?>
@@ -29,9 +31,10 @@ $v = '?v=' . filemtime(dirname(APP_DIR) . '/assets/app.js') . filemtime(dirname(
             <?php if ($user): ?>
                 <nav class="nav">
                     <a href="/new">Baru</a>
+                    <a href="/speaking">Speaking</a>
                     <a href="/history">Riwayat</a>
                     <a href="/questions">Soal</a>
-                    <?php if ($user['is_admin']): ?><a href="/settings">Pengaturan</a><?php endif; ?>
+                    <a href="/settings">Pengaturan</a>
                     <form method="post" action="/logout">
                         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
                         <button type="submit" class="nav-logout">Keluar</button>

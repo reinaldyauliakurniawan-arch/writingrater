@@ -1,0 +1,1324 @@
+[
+    {
+        "id": "guide-1",
+        "name": "Official Guide – Test 1",
+        "part1": [
+            {
+                "topic": "School days",
+                "questions": [
+                    "Tell me something about your secondary school.",
+                    "Which subject did you find most difficult at school? [Why?]",
+                    "Do you ever need that subject now? [Why? / Why not?]",
+                    "What did you enjoy about being a school student?"
+                ]
+            },
+            {
+                "topic": "Buildings",
+                "questions": [
+                    "Are there any famous buildings in your home town? [What are they?]",
+                    "In what type of building do most people in your home town live?",
+                    "Should buildings be attractive to look at? [Why? / Why not?]",
+                    "What is the most unusual building you have ever seen? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe an interesting story that you heard or read about in the news.",
+            "points": [
+                "when you heard or read about the story",
+                "what the story was about",
+                "why the story was in the news"
+            ],
+            "final": "and explain why you thought the story was interesting."
+        },
+        "part3": [
+            {
+                "topic": "Reading newspapers",
+                "questions": [
+                    "When do people like to read the newspaper?",
+                    "How important is it for people to have a choice of newspaper?",
+                    "What does a 'good' newspaper contain?"
+                ]
+            },
+            {
+                "topic": "The future of newspapers",
+                "questions": [
+                    "Why do some people choose to read the news on the Internet rather than in a newspaper?",
+                    "How is Internet news different from the news you read in the newspaper?",
+                    "Will Internet news ever replace newspapers? [Why? / Why not?]"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "guide-2",
+        "name": "Official Guide – Test 2",
+        "part1": [
+            {
+                "topic": "Home town",
+                "questions": [
+                    "Is your home town a good place to live? [Why? / Why not?]",
+                    "What sort of jobs do people do in your home town?",
+                    "In which part of your home town do most people live?",
+                    "Where did you play in your home town when you were a child?"
+                ]
+            },
+            {
+                "topic": "Films",
+                "questions": [
+                    "How often do you go to the cinema?",
+                    "Do you prefer to watch a film at the cinema or at home? [Why?]",
+                    "Which film from your childhood do you remember most? [Why?]",
+                    "What's your favourite film now? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe an interesting place that you have visited as a tourist.",
+            "points": [
+                "where this place is",
+                "why you went there",
+                "what you did there"
+            ],
+            "final": "and explain why you thought this place was so interesting."
+        },
+        "part3": [
+            {
+                "topic": "Places that tourists visit",
+                "questions": [
+                    "What areas of a town or city do tourists often like to visit?",
+                    "How important is it for local governments to look after popular tourist attractions?",
+                    "Should people pay to visit attractions such as museums and galleries? [Why? / Why not?]"
+                ]
+            },
+            {
+                "topic": "Being a tourist",
+                "questions": [
+                    "How should tourists behave when they are in a different country?",
+                    "What can local people do to help tourists enjoy their visit?",
+                    "What can tourists learn from visiting new places?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "guide-3",
+        "name": "Official Guide – Test 3",
+        "part1": [
+            {
+                "topic": "Work or study",
+                "intro": "Let's talk about what you do. Do you work or are you a student?",
+                "questions": [
+                    "(Work) Why did you choose your job?",
+                    "(Work) What are your working hours?",
+                    "(Work) Tell me something about the people who work with you.",
+                    "(Work) What don't you like about your job?",
+                    "(Study) Why did you choose your subject(s)?",
+                    "(Study) When do you prefer to study on your own? [Why?]",
+                    "(Study) Tell me something about the other students on your course.",
+                    "(Study) What don't you like about your studies?"
+                ]
+            },
+            {
+                "topic": "Sport",
+                "intro": "Let's go on to talk about sport.",
+                "questions": [
+                    "What sports are popular in your country?",
+                    "Did you learn any sports at school? [Why? / Why not?]",
+                    "How often do you watch sport? [Why not?]",
+                    "Do you participate in any sports at the moment? [Which ones?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a special event (e.g. a festival, carnival or other celebration) that takes place in your country.",
+            "points": [
+                "when the event takes place",
+                "why it takes place",
+                "what people do"
+            ],
+            "final": "and explain why the event is special."
+        },
+        "part3": [
+            {
+                "topic": "Celebrations for families and friends",
+                "questions": [
+                    "What sort of occasions do families and friends like to celebrate?",
+                    "How important are celebrations in people's lives? [Why? / Why not?]",
+                    "Should people have time off work for important celebrations? [Why? / Why not?]"
+                ]
+            },
+            {
+                "topic": "National celebrations",
+                "questions": [
+                    "Why do many people enjoy participating in national celebrations?",
+                    "Have national celebrations become more or less important over time? [Why?]",
+                    "What sort of things do you think countries will celebrate in the future?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "guide-4",
+        "name": "Official Guide – Test 4",
+        "part1": [
+            {
+                "topic": "Home town or city",
+                "questions": [
+                    "What kind of place is your town/city?",
+                    "What's the most interesting part of your town/city?",
+                    "Has your town/city changed in any way in your life time? [How?]",
+                    "Would you say your town/city is a good place for young people to live? [Why? / Why not?]"
+                ]
+            },
+            {
+                "topic": "Shopping",
+                "questions": [
+                    "What kind of things do you prefer shopping for?",
+                    "In what kind of places do you like to go shopping? [Why?]",
+                    "What effect has online shopping had in your country?",
+                    "What would you recommend that tourists buy from your country? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a popular teacher that you know.",
+            "points": [
+                "what this teacher looks like",
+                "what sort of person this teacher is",
+                "what this teacher helped you to learn"
+            ],
+            "final": "and explain why this teacher is popular."
+        },
+        "part3": [
+            {
+                "topic": "Education in school",
+                "questions": [
+                    "What can schools do to help students prepare for the next stage in their lives?",
+                    "What advice would you give to someone who doesn't like school?",
+                    "What can schools teach children that they can't learn from their parents?"
+                ]
+            },
+            {
+                "topic": "Education after school",
+                "questions": [
+                    "In general, what opportunities are available to students after they leave school?",
+                    "How do you think school life differs from university life?",
+                    "How important do you think it is for individuals to carry on learning after they have finished school and university?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "guide-5",
+        "name": "Official Guide – Test 5",
+        "part1": [
+            {
+                "topic": "Your life",
+                "intro": "Let's talk about what you do. Do you work or are you a student? [Examiner chooses appropriate questions.]",
+                "questions": [
+                    "(Work) What job do you do?",
+                    "(Work) What skills do you need for your job?",
+                    "(Work) What do you particularly like about your job?",
+                    "(Study) What subject are you studying?",
+                    "(Study) Why did you want to study that subject?",
+                    "(Study) How long have you been studying (English/nursing/accountancy, etc.)?"
+                ]
+            },
+            {
+                "topic": "Television",
+                "questions": [
+                    "How often do you watch television?",
+                    "What kinds of television programmes are most popular in your country?",
+                    "Is there anything you would like to change about television in your country? [Why? / Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a restaurant you enjoyed going to.",
+            "points": [
+                "where the restaurant was",
+                "who you went with",
+                "what type of food you ate in this restaurant"
+            ],
+            "final": "and explain why you thought the restaurant was good."
+        },
+        "part3": [
+            {
+                "topic": "Food and society",
+                "questions": [
+                    "Do you think that people eat healthier food than they did in the past? [Why? / Why not?]",
+                    "How important do you think it is for families to eat meals together?",
+                    "What effects has modern technology had on the food we eat?"
+                ]
+            },
+            {
+                "topic": "Restaurants",
+                "questions": [
+                    "Why do people go to restaurants when they want to celebrate important occasions?",
+                    "Do you think that food prepared at home is always better than in restaurants?",
+                    "Which are more popular in your country: fast food restaurants or traditional restaurants? [Why?]"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "guide-6",
+        "name": "Official Guide – Test 6",
+        "part1": [
+            {
+                "topic": "Your country",
+                "questions": [
+                    "Do most people live in houses or apartments in your country?",
+                    "What do people usually do in their free time in your country?",
+                    "What do you enjoy most about living in your country?",
+                    "Would you say that your country is a good place to visit? [Why?]"
+                ]
+            },
+            {
+                "topic": "Food",
+                "questions": [
+                    "What is your favourite meal?",
+                    "Do you prefer to eat out or eat at home? [Why?]",
+                    "Are there any traditional meals that you would recommend? [Why?]",
+                    "How have people's eating habits changed in your country?"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a television programme that you watch.",
+            "points": [
+                "which kind of television programme it is",
+                "what usually happens in the television programme",
+                "why you enjoy watching the television programme"
+            ],
+            "final": "and explain why you would recommend the television programme to other people."
+        },
+        "part3": [
+            {
+                "topic": "The role of advertising on television",
+                "questions": [
+                    "How do you feel about the amount of advertising on television?",
+                    "In what ways has television advertising changed in the last ten years?",
+                    "To what extent are people influenced by the advertising they see on television?"
+                ]
+            },
+            {
+                "topic": "The effect of films on society",
+                "questions": [
+                    "Why do people still enjoy going to the cinema to watch a film?",
+                    "What sort of influence can films have on people?",
+                    "Should film-makers be responsible for the impact their films can have on people?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c19-1",
+        "name": "Cambridge 19 – Test 1",
+        "part1": [
+            {
+                "topic": "International food",
+                "questions": [
+                    "Can you find food from many different countries where you live? [Why/Why not?]",
+                    "How often do you eat typical food from other countries? [Why/Why not?]",
+                    "Have you ever tried making food from another country? [Why/Why not?]",
+                    "What food from your country would you recommend to people from other countries? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a law that was introduced in your country and that you thought was a very good idea.",
+            "points": [
+                "what the law was",
+                "who introduced it",
+                "when and why it was introduced"
+            ],
+            "final": "and explain why you thought this law was such a good idea."
+        },
+        "part3": [
+            {
+                "topic": "School rules",
+                "questions": [
+                    "What kinds of rules are common in a school?",
+                    "How important is it to have rules in a school?",
+                    "What do you recommend should happen if children break school rules?"
+                ]
+            },
+            {
+                "topic": "Working in the legal profession",
+                "questions": [
+                    "Can you suggest why many students decide to study law at university?",
+                    "What are the key personal qualities needed to be a successful lawyer?",
+                    "Do you agree that working in the legal profession is very stressful?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c19-2",
+        "name": "Cambridge 19 – Test 2",
+        "part1": [
+            {
+                "topic": "Travelling by plane",
+                "questions": [
+                    "Have you travelled a lot by plane? [To where?/Why not?]",
+                    "Why do you think some people enjoy travelling by plane?",
+                    "Would you like to live near an airport? [Why/Why not?]",
+                    "In the future, do you think that you will travel by plane more often? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a person from your country who has won a prize, award or medal.",
+            "points": [
+                "who this person is",
+                "which prize, award or medal they received",
+                "what they did to win this"
+            ],
+            "final": "and explain whether you think it was right that this person received this prize, award or medal."
+        },
+        "part3": [
+            {
+                "topic": "Rewards for children at school",
+                "questions": [
+                    "What types of school prizes do children in your country receive?",
+                    "What do you think are the advantages of rewarding schoolchildren for good work?",
+                    "Do you agree that it's more important for children to receive rewards from their parents than from teachers?"
+                ]
+            },
+            {
+                "topic": "Rewards for sportspeople",
+                "questions": [
+                    "Do you think that some sportspeople (e.g., top footballers) are paid too much money?",
+                    "Should everyone on a team get the same prize money when they win?",
+                    "Do you agree with the view that, in sport, taking part is more important than winning?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c19-3",
+        "name": "Cambridge 19 – Test 3",
+        "part1": [
+            {
+                "topic": "Holidays",
+                "questions": [
+                    "Do you prefer spending holidays with friends or with family? [Why?]",
+                    "What kind of holiday accommodation do you like to stay in? [Why?]",
+                    "What plans do you have for your next holiday?",
+                    "Is your city or region a good place for other people to visit on holiday? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a car journey you made that took longer than expected.",
+            "points": [
+                "where you were going",
+                "who you were with",
+                "how you felt during the journey"
+            ],
+            "final": "and explain why this car journey took longer than expected."
+        },
+        "part3": [
+            {
+                "topic": "Driving a car",
+                "questions": [
+                    "How interested are young people in your country in learning to drive?",
+                    "What are the differences between driving in the countryside and driving in the city?",
+                    "Do you consider most drivers where you live to be good drivers?"
+                ]
+            },
+            {
+                "topic": "Electric cars",
+                "questions": [
+                    "How popular are electric cars in your country?",
+                    "In what ways could more people be persuaded to buy electric cars?",
+                    "Do you think all cars will be electric one day?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c19-4",
+        "name": "Cambridge 19 – Test 4",
+        "part1": [
+            {
+                "topic": "Cafés",
+                "questions": [
+                    "Do you have a favourite café? [Why/Why not?]",
+                    "Do you often go to cafés by yourself? [Why/Why not?]",
+                    "What do you think helps to make a café very popular? [Why?]",
+                    "Why do some people prefer cafés that are part of large chains, rather than small, local cafés?"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a place you visited that has beautiful views.",
+            "points": [
+                "where this place is",
+                "when and why you visited it",
+                "what views you can see from this place"
+            ],
+            "final": "and explain why you think these views are so beautiful."
+        },
+        "part3": [
+            {
+                "topic": "The beauty industry",
+                "questions": [
+                    "Do you agree that most beauty products are a waste of money?",
+                    "How does the beauty industry advertise its products so successfully?",
+                    "What do you think of the view that beauty products should not be advertised to children?"
+                ]
+            },
+            {
+                "topic": "Beauty and culture",
+                "questions": [
+                    "Why do many people equate youth with beauty?",
+                    "Do you think that being beautiful could affect a person's success in life?",
+                    "Why might society's ideas about beauty change over time?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c18-1",
+        "name": "Cambridge 18 – Test 1",
+        "part1": [
+            {
+                "topic": "Paying bills",
+                "questions": [
+                    "What kinds of bills do you have to pay?",
+                    "How do you usually pay your bills – in cash or by another method? [Why?]",
+                    "Have you ever forgotten to pay a bill? [Why/Why not?]",
+                    "Is there anything you could do to make your bills cheaper? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe some food or drink that you learned to prepare.",
+            "points": [
+                "what food or drink you learned to prepare",
+                "when and where you learned to prepare this",
+                "how you learned to prepare this"
+            ],
+            "final": "and explain how you felt about learning to prepare this food or drink."
+        },
+        "part3": [
+            {
+                "topic": "Young people and cooking",
+                "questions": [
+                    "What kinds of things can children learn to cook?",
+                    "Do you think it is important for children to learn to cook?",
+                    "Do you think young people should learn to cook at home or at school?"
+                ]
+            },
+            {
+                "topic": "Working as a chef",
+                "questions": [
+                    "How enjoyable do you think it would be to work as a professional chef?",
+                    "What skills does a person need to be a great chef?",
+                    "How much influence do celebrity/TV chefs have on what ordinary people cook?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c18-2",
+        "name": "Cambridge 18 – Test 2",
+        "part1": [
+            {
+                "topic": "Science",
+                "questions": [
+                    "Did you like studying science when you were at school? [Why/Why not?]",
+                    "What do you remember about your science teachers at school?",
+                    "How interested are you in science now? [Why/Why not?]",
+                    "What do you think has been an important recent scientific development? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a tourist attraction in your country that you would recommend.",
+            "points": [
+                "what the tourist attraction is",
+                "where in your country this tourist attraction is",
+                "what visitors can see and do at this tourist attraction"
+            ],
+            "final": "and explain why you would recommend this tourist attraction."
+        },
+        "part3": [
+            {
+                "topic": "Museums and art galleries",
+                "questions": [
+                    "What are the most popular museums and art galleries in … / where you live?",
+                    "Do you believe that all museums and art galleries should be free?",
+                    "What kinds of things make a museum or art gallery an interesting place to visit?"
+                ]
+            },
+            {
+                "topic": "The holiday industry",
+                "questions": [
+                    "Why, do you think, do some people book package holidays rather than travelling independently?",
+                    "Would you say that large numbers of tourists cause problems for local people?",
+                    "What sort of impact can large holiday resorts have on the environment?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c18-3",
+        "name": "Cambridge 18 – Test 3",
+        "part1": [
+            {
+                "topic": "Online shopping",
+                "questions": [
+                    "How often do you buy things online? [Why?]",
+                    "What was the last thing you bought online?",
+                    "Do you ever see things in shops and then buy them online? [Why/Why not?]",
+                    "Do you think the popularity of online shopping is changing your town or city centre? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a time when you enjoyed visiting a member of your family in their home.",
+            "points": [
+                "who you visited and where they lived",
+                "why you made this visit",
+                "what happened during this visit"
+            ],
+            "final": "and explain what you enjoyed about this visit."
+        },
+        "part3": [
+            {
+                "topic": "Family occasions",
+                "questions": [
+                    "When do families celebrate together in your country?",
+                    "How often do all the generations in a family come together in your country?",
+                    "Why is it that some people might not enjoy attending family occasions?"
+                ]
+            },
+            {
+                "topic": "Everyday life in families",
+                "questions": [
+                    "Do you think it is a good thing for parents to help their children with schoolwork?",
+                    "How important do you think it is for families to eat together at least once a day?",
+                    "Do you believe that everyone in a family should share household tasks?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c18-4",
+        "name": "Cambridge 18 – Test 4",
+        "part1": [
+            {
+                "topic": "Sleep",
+                "questions": [
+                    "How many hours do you usually sleep at night?",
+                    "Do you sometimes sleep during the day? [Why/Why not?]",
+                    "What do you do if you can't get to sleep at night? [Why?]",
+                    "Do you ever remember the dreams you've had while you were asleep?"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a time when you met someone who you became good friends with.",
+            "points": [
+                "who you met",
+                "when and where you met this person",
+                "what you thought about this person when you first met"
+            ],
+            "final": "and explain why you think you became good friends with this person."
+        },
+        "part3": [
+            {
+                "topic": "Friends at school",
+                "questions": [
+                    "How important is it for children to have lots of friends at school?",
+                    "Do you think it is wrong for parents to influence which friends their children have?",
+                    "Why do you think children often choose different friends as they get older?"
+                ]
+            },
+            {
+                "topic": "Making new friends",
+                "questions": [
+                    "If a person is moving to a new town, what is a good way for them to make friends?",
+                    "Can you think of any disadvantages of making new friends online?",
+                    "Would you say it is harder for people to make new friends as they get older?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c17-1",
+        "name": "Cambridge 17 – Test 1",
+        "part1": [
+            {
+                "topic": "History",
+                "questions": [
+                    "What did you study in history lessons when you were at school?",
+                    "Did you enjoy studying history at school? [Why/Why not?]",
+                    "How often do you watch TV programmes about history now? [Why/Why not?]",
+                    "What period in history would you like to learn more about? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe the neighbourhood you lived in when you were a child.",
+            "points": [
+                "where in your town/city the neighbourhood was",
+                "what kind of people lived there",
+                "what it was like to live in this neighbourhood"
+            ],
+            "final": "and explain whether you would like to live in this neighbourhood in the future."
+        },
+        "part3": [
+            {
+                "topic": "Neighbours",
+                "questions": [
+                    "What sort of things can neighbours do to help each other?",
+                    "How well do people generally know their neighbours in your country?",
+                    "How important do you think it is to have good neighbours?"
+                ]
+            },
+            {
+                "topic": "Facilities in cities",
+                "questions": [
+                    "Which facilities are most important to people living in cities?",
+                    "How does shopping in small local shops differ from shopping in large city centre shops?",
+                    "Do you think that children should always go to the school nearest to where they live?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c17-2",
+        "name": "Cambridge 17 – Test 2",
+        "part1": [
+            {
+                "topic": "Reading",
+                "questions": [
+                    "Did you have a favourite book when you were a child? [Why/Why not?]",
+                    "How much reading do you do for your work/studies? [Why/Why not?]",
+                    "What kinds of books do you read for pleasure? [Why/Why not?]",
+                    "Do you prefer to read a newspaper or a magazine online, or to buy a copy? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a big city you would like to visit.",
+            "points": [
+                "which big city you would like to visit",
+                "how you would travel there",
+                "what you would do there"
+            ],
+            "final": "and explain why you would like to visit this big city."
+        },
+        "part3": [
+            {
+                "topic": "Visiting cities on holiday",
+                "questions": [
+                    "What are the most interesting things to do while visiting cities on holiday?",
+                    "Why can it be expensive to visit cities on holiday?",
+                    "Do you think it is better to visit cities alone or in a group with friends?"
+                ]
+            },
+            {
+                "topic": "The growth of cities",
+                "questions": [
+                    "Why have cities increased in size in recent years?",
+                    "What are the challenges created by ever-growing cities?",
+                    "In what ways do you think cities of the future will be different to cities today?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c17-3",
+        "name": "Cambridge 17 – Test 3",
+        "part1": [
+            {
+                "topic": "Drinks",
+                "questions": [
+                    "What do you like to drink with your dinner? [Why?]",
+                    "Do you drink a lot of water every day? [Why/Why not?]",
+                    "Do you prefer drinking tea or coffee? [Why?]",
+                    "If people visit you in your home, what do you usually offer them to drink? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a monument (e.g., a statue or sculpture) that you like.",
+            "points": [
+                "what this monument is",
+                "where this monument is",
+                "what it looks like"
+            ],
+            "final": "and explain why you like this monument."
+        },
+        "part3": [
+            {
+                "topic": "Public monuments",
+                "questions": [
+                    "What kinds of monuments do tourists in your country enjoy visiting?",
+                    "Why do you think there are often statues of famous people in public places?",
+                    "Do you agree that old monuments and buildings should always be preserved?"
+                ]
+            },
+            {
+                "topic": "Architecture",
+                "questions": [
+                    "Why is architecture such a popular university subject?",
+                    "In what ways has the design of homes changed in recent years?",
+                    "To what extent does the design of buildings affect people's moods?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c17-4",
+        "name": "Cambridge 17 – Test 4",
+        "part1": [
+            {
+                "topic": "Maps",
+                "questions": [
+                    "Do you think it's better to use a paper map or a map on your phone? [Why?]",
+                    "When was the last time you needed to use a map? [Why/Why not?]",
+                    "If you visit a new city, do you always use a map to find your way around? [Why/Why not?]",
+                    "In general, do you find it easy to read maps? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe an occasion when you had to do something in a hurry.",
+            "points": [
+                "what you had to do",
+                "why you had to do this in a hurry",
+                "how well you did this"
+            ],
+            "final": "and explain how you felt about having to do this in a hurry."
+        },
+        "part3": [
+            {
+                "topic": "Arriving late",
+                "questions": [
+                    "Do you think it's OK to arrive late when meeting a friend?",
+                    "What should happen to people who arrive late for work?",
+                    "Can you suggest how people can make sure they don't arrive late?"
+                ]
+            },
+            {
+                "topic": "Managing study time",
+                "questions": [
+                    "Is it better to study for long periods or in shorter blocks of time?",
+                    "What are the likely effects of students not managing their study time well?",
+                    "How important is it for students to have enough leisure time?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c16-1",
+        "name": "Cambridge 16 – Test 1",
+        "part1": [
+            {
+                "topic": "People you study/work with",
+                "questions": [
+                    "Who do you spend most time studying/working with? [Why?]",
+                    "What kinds of things do you study/work on with other people? [Why?]",
+                    "Are there times when you study/work better by yourself? [Why/Why not?]",
+                    "Is it important to like the people you study/work with? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a tourist attraction you enjoyed visiting.",
+            "points": [
+                "what this tourist attraction is",
+                "when and why you visited it",
+                "what you did there"
+            ],
+            "final": "and explain why you enjoyed visiting this tourist attraction."
+        },
+        "part3": [
+            {
+                "topic": "Different kinds of tourist attractions",
+                "questions": [
+                    "What are the most popular tourist attractions in your country?",
+                    "How do the types of tourist attractions that younger people like to visit compare with those that older people like to visit?",
+                    "Do you agree that some tourist attractions (e.g. national museums/galleries) should be free to visit?"
+                ]
+            },
+            {
+                "topic": "The importance of international tourism",
+                "questions": [
+                    "Why is tourism important to a country?",
+                    "What are the benefits to individuals of visiting another country as tourists?",
+                    "How necessary is it for tourists to learn the language of the country they're visiting?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c16-2",
+        "name": "Cambridge 16 – Test 2",
+        "part1": [
+            {
+                "topic": "Flowers and plants",
+                "questions": [
+                    "Do you have a favourite flower or plant? [Why/Why not?]",
+                    "What kinds of flowers and plants grow near where you live? [Why/Why not?]",
+                    "Is it important to you to have flowers and plants in your home? [Why/Why not?]",
+                    "Have you ever bought flowers for someone else? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a review you read about a product or service.",
+            "points": [
+                "where you read the review",
+                "what the product or service was",
+                "what information the review gave about the product or service"
+            ],
+            "final": "and explain what you did as a result of reading this review."
+        },
+        "part3": [
+            {
+                "topic": "Online reviews",
+                "questions": [
+                    "What kinds of things do people write online reviews about in your country?",
+                    "Why do some people write online reviews?",
+                    "Do you think that online reviews are good for both shoppers and companies?"
+                ]
+            },
+            {
+                "topic": "Customer service",
+                "questions": [
+                    "What do you think it might be like to work in a customer service job?",
+                    "Do you agree that customers are more likely to complain nowadays?",
+                    "How important is it for companies to take all customer complaints seriously?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c16-3",
+        "name": "Cambridge 16 – Test 3",
+        "part1": [
+            {
+                "topic": "Summer",
+                "questions": [
+                    "Is summer your favourite time of year? [Why/Why not?]",
+                    "What do you do in summer when the weather's very hot? [Why?]",
+                    "Do you go on holiday every summer? [Why/Why not?]",
+                    "Did you enjoy the summer holidays when you were at school? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a luxury item you would like to own in the future.",
+            "points": [
+                "what item you would like to own",
+                "what this item looks like",
+                "why you would like to own this item"
+            ],
+            "final": "and explain whether you think you will ever own this item."
+        },
+        "part3": [
+            {
+                "topic": "Expensive items",
+                "questions": [
+                    "Which expensive items would many young people (in your country) like to buy?",
+                    "How do the expensive items that younger people want to buy differ from those that older people want to buy?",
+                    "Do you think that people are more likely to buy expensive items for their friends or for themselves?"
+                ]
+            },
+            {
+                "topic": "Rich people",
+                "questions": [
+                    "How difficult is it to become very rich in today's world?",
+                    "Do you agree that money does not necessarily bring happiness?",
+                    "In what ways might rich people use their money to help society?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c16-4",
+        "name": "Cambridge 16 – Test 4",
+        "part1": [
+            {
+                "topic": "Fast food",
+                "questions": [
+                    "What kinds of fast food have you tried? [Why/Why not?]",
+                    "Do you ever use a microwave to cook food quickly? [Why/Why not?]",
+                    "How popular are fast food restaurants where you live? [Why/Why not?]",
+                    "When would you go to a fast-food restaurant? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe some technology (e.g. an app, phone, software program) that you decided to stop using.",
+            "points": [
+                "when and where you got this technology",
+                "why you started using this technology",
+                "why you decided to stop using it"
+            ],
+            "final": "and explain how you feel about the decision you made."
+        },
+        "part3": [
+            {
+                "topic": "Computer games",
+                "questions": [
+                    "What kinds of computer games do people play in your country?",
+                    "Why do people enjoy playing computer games?",
+                    "Do you think that all computer games should have a minimum age for players?"
+                ]
+            },
+            {
+                "topic": "Technology in the classroom",
+                "questions": [
+                    "In what ways can technology in the classroom be helpful?",
+                    "Do you agree that students are often better at using technology than their teachers?",
+                    "Do you believe that computers will ever replace human teachers?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c15-1",
+        "name": "Cambridge 15 – Test 1",
+        "part1": [
+            {
+                "topic": "Email",
+                "questions": [
+                    "What kinds of emails do you receive about your work or studies?",
+                    "Do you prefer to email, phone or text your friends? [Why?]",
+                    "Do you reply to emails and messages as soon as you receive them? [Why/Why not?]",
+                    "Are you happy to receive emails that are advertising things? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a hotel that you know.",
+            "points": [
+                "where this hotel is",
+                "what this hotel looks like",
+                "what facilities this hotel has"
+            ],
+            "final": "and explain whether you think this is a nice hotel to stay in."
+        },
+        "part3": [
+            {
+                "topic": "Staying in hotels",
+                "questions": [
+                    "What things are important when people are choosing a hotel?",
+                    "Why do some people not like staying in hotels?",
+                    "Do you think staying in a luxury hotel is a waste of money?"
+                ]
+            },
+            {
+                "topic": "Working in a hotel",
+                "questions": [
+                    "Do you think hotel work is a good career for life?",
+                    "How does working in a big hotel compare with working in a small hotel?",
+                    "What skills are needed to be a successful hotel manager?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c15-2",
+        "name": "Cambridge 15 – Test 2",
+        "part1": [
+            {
+                "topic": "Languages",
+                "questions": [
+                    "How many languages can you speak? [Why/Why not?]",
+                    "How useful will English be to you in your future? [Why/Why not?]",
+                    "What do you remember about learning languages at school? [Why/Why not?]",
+                    "What do you think would be the hardest language for you to learn? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a website that you bought something from.",
+            "points": [
+                "what the website is",
+                "what you bought from this website",
+                "how satisfied you were with what you bought"
+            ],
+            "final": "and explain what you liked or disliked about using this website."
+        },
+        "part3": [
+            {
+                "topic": "Shopping online",
+                "questions": [
+                    "What kinds of things do people in your country often buy from online shops?",
+                    "Why do you think online shopping has become so popular nowadays?",
+                    "What are some possible disadvantages of buying things from online shops?"
+                ]
+            },
+            {
+                "topic": "The culture of consumerism",
+                "questions": [
+                    "Why do many people today keep buying things which they do not need?",
+                    "Do you believe the benefits of a consumer society outweigh the disadvantages?",
+                    "How possible is it to avoid the culture of consumerism?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c15-3",
+        "name": "Cambridge 15 – Test 3",
+        "part1": [
+            {
+                "topic": "Swimming",
+                "questions": [
+                    "Did you learn to swim when you were a child? [Why/Why not?]",
+                    "How often do you go swimming now? [Why/Why not?]",
+                    "What places are there for swimming where you live? [Why?]",
+                    "Do you think it would be more enjoyable to go swimming outdoors or at an indoor pool? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a famous business person that you know about.",
+            "points": [
+                "who this person is",
+                "what kind of business this person is involved in",
+                "what you know about this business person"
+            ],
+            "final": "and explain what you think of this business person."
+        },
+        "part3": [
+            {
+                "topic": "Famous people today",
+                "questions": [
+                    "What kinds of people are most famous in your country today?",
+                    "Why are there so many stories about famous people in the news?",
+                    "Do you agree or disagree that many young people today want to be famous?"
+                ]
+            },
+            {
+                "topic": "Advantages of being famous",
+                "questions": [
+                    "Do you think it is easy for famous people to earn a lot of money?",
+                    "Why might famous people enjoy having fans?",
+                    "In what ways could famous people use their influence to do good things in the world?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c15-4",
+        "name": "Cambridge 15 – Test 4",
+        "part1": [
+            {
+                "topic": "Jewellery",
+                "questions": [
+                    "How often do you wear jewellery? [Why/Why not?]",
+                    "What type of jewellery do you like best? [Why/Why not?]",
+                    "When do people like to give jewellery in your country? [Why?]",
+                    "Have you ever given jewellery to someone as a gift? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe an interesting TV programme you watched about a science topic.",
+            "points": [
+                "what science topic this TV programme was about",
+                "when you saw this TV programme",
+                "what you learnt from this TV programme about a science topic"
+            ],
+            "final": "and explain why you found this TV programme interesting."
+        },
+        "part3": [
+            {
+                "topic": "Science and the public",
+                "questions": [
+                    "How interested are most people in your country in science?",
+                    "Why do you think children today might be better at science than their parents?",
+                    "How do you suggest the public can learn more about scientific developments?"
+                ]
+            },
+            {
+                "topic": "Scientific discoveries",
+                "questions": [
+                    "What do you think are the most important scientific discoveries in the last 100 years?",
+                    "Do you agree or disagree that there are no more major scientific discoveries left to make?",
+                    "Who should pay for scientific research – governments or private companies?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c14-1",
+        "name": "Cambridge 14 – Test 1",
+        "part1": [
+            {
+                "topic": "Future",
+                "questions": [
+                    "What job would you like to have ten years from now? [Why?]",
+                    "How useful will English be for your future? [Why/Why not?]",
+                    "How much travelling do you hope to do in the future? [Why/Why not?]",
+                    "How do you think your life will change in the future? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a book that you enjoyed reading because you had to think a lot.",
+            "points": [
+                "what this book was",
+                "why you decided to read it",
+                "what reading this book made you think about"
+            ],
+            "final": "and explain why you enjoyed reading this book."
+        },
+        "part3": [
+            {
+                "topic": "Children and reading",
+                "questions": [
+                    "What are the most popular types of children's books in your country?",
+                    "What are the benefits of parents reading books to their children?",
+                    "Should parents always let children choose the books they read?"
+                ]
+            },
+            {
+                "topic": "Electronic books",
+                "questions": [
+                    "How popular are electronic books in your country?",
+                    "What are the advantages of parents reading electronic books (compared to printed books)?",
+                    "Will electronic books ever completely replace printed books in the future?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c14-2",
+        "name": "Cambridge 14 – Test 2",
+        "part1": [
+            {
+                "topic": "Social media",
+                "questions": [
+                    "Which social media websites do you use?",
+                    "How much time do you spend on social media sites? [Why/Why not?]",
+                    "What kind of information about yourself have you put on social media? [Why/Why not?]",
+                    "Is there anything you don't like about social media? [Why?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe something you liked very much which you bought for your home.",
+            "points": [
+                "what you bought",
+                "when and where you bought it",
+                "why you chose this particular thing"
+            ],
+            "final": "and explain why you liked it so much."
+        },
+        "part3": [
+            {
+                "topic": "Creating a nice home",
+                "questions": [
+                    "Why do some people buy lots of things for their home?",
+                    "Do you think it is very expensive to make a home look nice?",
+                    "Why don't some people care about how their home looks?"
+                ]
+            },
+            {
+                "topic": "Different types of home",
+                "questions": [
+                    "In what ways is living in a flat/apartment better than living in a house?",
+                    "Do you think homes will look different in the future?",
+                    "Do you agree that the kinds of homes people prefer change as they get older?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c14-3",
+        "name": "Cambridge 14 – Test 3",
+        "part1": [
+            {
+                "topic": "Neighbours",
+                "questions": [
+                    "How often do you see your neighbours? [Why/Why not?]",
+                    "Do you invite your neighbours to your home? [Why/Why not?]",
+                    "Do you think you are a good neighbour? [Why/Why not?]",
+                    "Has a neighbour ever helped you? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a very difficult task that you succeeded in doing as part of your work or studies.",
+            "points": [
+                "what task you did",
+                "why this task was very difficult",
+                "how you worked on this task"
+            ],
+            "final": "and explain how you felt when you had successfully completed this task."
+        },
+        "part3": [
+            {
+                "topic": "Difficult jobs",
+                "questions": [
+                    "What are the most difficult jobs that people do?",
+                    "Why do you think some people choose to do difficult jobs?",
+                    "Do you agree or disagree that all jobs are difficult sometimes?"
+                ]
+            },
+            {
+                "topic": "Personal and career success",
+                "questions": [
+                    "How important is it for everyone to have a goal in their personal life?",
+                    "Is it always necessary to work hard in order to achieve career success?",
+                    "Do you think that successful people are always happy people?"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "c14-4",
+        "name": "Cambridge 14 – Test 4",
+        "part1": [
+            {
+                "topic": "Your neighbourhood",
+                "questions": [
+                    "Do you like the neighbourhood you live in? [Why/Why not?]",
+                    "What do you do in your neighbourhood in your free time? [Why/Why not?]",
+                    "What new things would you like to have in your neighbourhood? [Why/Why not?]",
+                    "Would you like to live in another neighbourhood in your town or city? [Why/Why not?]"
+                ]
+            }
+        ],
+        "part2": {
+            "title": "Describe a website you have bought something from.",
+            "points": [
+                "what the website is",
+                "what you bought from this website",
+                "how satisfied you were with what you bought"
+            ],
+            "final": "and explain what you liked and disliked about using this website."
+        },
+        "part3": [
+            {
+                "topic": "Shopping online",
+                "questions": [
+                    "What kinds of things do people in your country often buy from online shops?",
+                    "Why has online shopping become so popular in many countries?",
+                    "What are some possible disadvantages of buying things from online shops?"
+                ]
+            },
+            {
+                "topic": "Online retail businesses",
+                "questions": [
+                    "Do you agree that the prices of all goods should be lower on internet shopping sites than in shops?",
+                    "Will large shopping malls continue to be popular, despite the growth of internet shopping?",
+                    "Do you think that some businesses (e.g. banks and travel agents) will only operate online in the future?"
+                ]
+            }
+        ]
+    }
+]

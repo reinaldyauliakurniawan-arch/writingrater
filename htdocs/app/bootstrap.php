@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 const APP_NAME = 'IELTS Writing Rater';
 const APP_TIMEZONE = 'Asia/Jakarta';
-const PROMPT_VERSION = 'v1.2.0'; // naikkan setiap prompt/KB berubah
+const PROMPT_VERSION = 'v1.3.0'; // naikkan setiap prompt/KB berubah
 const MIN_WORDS = ['task1_academic' => 150, 'task2' => 250];
 const SEVERE_UNDERLENGTH_RATIO = 0.6;
 const BAND1_MAX_WORDS = 20;

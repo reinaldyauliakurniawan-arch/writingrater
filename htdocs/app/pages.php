@@ -24,6 +24,7 @@ function page_dispatch(string $path): never
         }
         if (preg_match('#^/submissions/([0-9a-fA-F-]{36})$#', $path, $m)) page_submission(strtolower($m[1]));
         if (preg_match('#^/sessions/([0-9a-fA-F-]{36})$#', $path, $m)) page_session(strtolower($m[1]));
+        if (preg_match('#^/speaking/([0-9a-fA-F-]{36})$#', $path, $m)) page_speaking_test(strtolower($m[1]));
         match ($path) {
             '/' => page_landing(),
             '/login' => page_login(),
@@ -32,6 +33,8 @@ function page_dispatch(string $path): never
             '/history' => page_history(),
             '/questions' => page_questions(),
             '/settings' => page_settings(),
+            '/speaking' => page_speaking(),
+            '/speaking/cek' => page_speaking_check(),
             default => throw new AppError('NOT_FOUND'),
         };
     } catch (AppError $e) {
@@ -180,9 +183,8 @@ function page_questions(): never
 
 function page_settings(): never
 {
-    $user = require_user();
-    if (!$user['is_admin']) render('message', ['message' => 'Halaman ini khusus admin.'], 'Pengaturan');
-    render('settings', ['settings' => public_settings(), 'providers' => PROVIDER_OPTIONS], 'Pengaturan');
+    require_user();
+    render('settings', ['providers' => PROVIDER_OPTIONS], 'Pengaturan');
 }
 
 function page_submission(string $id): never
@@ -195,6 +197,36 @@ function page_session(string $id): never
 {
     $user = require_user();
     render('session', ['view' => session_view($id, $user['id']), 'students' => student_names($user['id']), 'wide' => true], 'Sesi Writing');
+}
+
+// ---- Speaking ----
+
+function page_speaking(): never
+{
+    require_once APP_DIR . '/lib/speaking.php';
+    $user = require_user();
+    $names = array_column(db_all('SELECT DISTINCT studentName FROM `speakingtest` WHERE userId = ? AND studentName IS NOT NULL', [$user['id']]), 'studentName');
+    $students = array_values(array_unique(array_merge(student_names($user['id']), $names)));
+    sort($students, SORT_NATURAL | SORT_FLAG_CASE);
+    render('speaking', [
+        'sets' => speaking_set_options(),
+        'modes' => SPEAKING_MODE_LABELS,
+        'tests' => speaking_list($user['id']),
+        'students' => $students,
+    ], 'Speaking');
+}
+
+function page_speaking_check(): never
+{
+    require_user();
+    render('speaking_check', [], 'Cek Perangkat');
+}
+
+function page_speaking_test(string $id): never
+{
+    require_once APP_DIR . '/lib/speaking.php';
+    $user = require_user();
+    render('speaking_test', ['view' => speaking_view(get_owned_speaking($id, $user['id'])), 'wide' => true], 'Ujian Speaking');
 }
 
 // ---- Instalasi: buat/perbarui tabel dan impor soal bawaan ----

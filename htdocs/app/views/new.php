@@ -17,4 +17,8 @@ $cards = [
             </button>
         </form>
     <?php endforeach; ?>
+    <a href="/speaking" class="card-click" style="display:block;text-decoration:none">
+        <span class="bold text-primary" style="display:block;font-size:18px">Speaking (Part 1–3)</span>
+        <span class="muted" style="display:block;margin-top:4px">Simulasi ujian Speaking dengan examiner. Rekaman diubah jadi teks di laptop, audio tidak disimpan.</span>
+    </a>
 </div>

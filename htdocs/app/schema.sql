@@ -100,9 +100,9 @@ CREATE TABLE IF NOT EXISTS `llmcall` (
   `id` int NOT NULL AUTO_INCREMENT,
   `userId` char(36) NOT NULL,
   `submissionId` char(36) DEFAULT NULL,
-  `action` enum('extract','grade','polish') NOT NULL,
+  `action` enum('extract','grade','polish','speaking') NOT NULL,
   `actionId` char(36) NOT NULL,
-  `kind` enum('extract','factcheck','grade','polish','rescore') NOT NULL,
+  `kind` enum('extract','factcheck','grade','polish','rescore','speaking') NOT NULL,
   `model` varchar(255) NOT NULL,
   `inputTokens` int DEFAULT NULL,
   `outputTokens` int DEFAULT NULL,
@@ -116,16 +116,35 @@ CREATE TABLE IF NOT EXISTS `llmcall` (
   CONSTRAINT `LlmCall_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `appsetting` (
-  `id` int NOT NULL DEFAULT 1,
-  `provider` enum('anthropic','openai','google','openai_compatible') NOT NULL,
-  `model` varchar(200) NOT NULL,
-  `baseUrl` varchar(500) DEFAULT NULL,
-  `apiKeyEncrypted` text DEFAULT NULL,
-  `apiKeyLast4` varchar(4) DEFAULT NULL,
-  `lastTestOk` tinyint(1) DEFAULT NULL,
-  `lastTestAt` datetime(3) DEFAULT NULL,
+-- Ujian Speaking. Audio tidak pernah disimpan: hanya transkrip (dibuat di browser) dan nilai.
+CREATE TABLE IF NOT EXISTS `speakingtest` (
+  `id` char(36) NOT NULL,
+  `userId` char(36) NOT NULL,
+  `studentName` varchar(100) DEFAULT NULL,
+  `setId` varchar(50) NOT NULL,
+  `mode` enum('p1','p2','p3','full') NOT NULL,
+  `status` enum('recording','review','final') NOT NULL DEFAULT 'recording',
+  `transcripts` longtext DEFAULT NULL,
+  `aiResult` longtext DEFAULT NULL,
+  `aiBandLr` int DEFAULT NULL,
+  `aiBandGra` int DEFAULT NULL,
+  `bandLr` int DEFAULT NULL,
+  `bandGra` int DEFAULT NULL,
+  `bandFc` int DEFAULT NULL,
+  `bandPron` int DEFAULT NULL,
+  `overallRaw` double DEFAULT NULL,
+  `overall` double DEFAULT NULL,
+  `examinerComment` text DEFAULT NULL,
+  `model` varchar(255) DEFAULT NULL,
+  `promptVersion` varchar(20) DEFAULT NULL,
+  `lastErrorCode` varchar(50) DEFAULT NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updatedAt` datetime(3) NOT NULL,
-  `updatedBy` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  `finalizedAt` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `SpeakingTest_userId_createdAt_idx` (`userId`, `createdAt`),
+  CONSTRAINT `SpeakingTest_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tidak ada tabel pengaturan AI: API key setiap pengguna disimpan di browsernya sendiri.
+-- Tabel lama `appsetting` (berisi API key bersama) dihapus oleh upgrade_schema().

@@ -32,8 +32,12 @@ function api_routes(): array
         ['PATCH', '#^/api/questions/' . UUID_RE . '$#', 'api_patch_question'],
         ['DELETE', '#^/api/questions/' . UUID_RE . '$#', 'api_delete_question'],
         ['GET', '#^/api/questions/' . UUID_RE . '/image$#', 'api_get_question_image'],
-        ['GET', '#^/api/settings$#', 'api_get_settings'],
-        ['PUT', '#^/api/settings$#', 'api_put_settings'],
+        ['POST', '#^/api/speaking$#', 'api_create_speaking'],
+        ['GET', '#^/api/speaking/' . UUID_RE . '$#', 'api_get_speaking'],
+        ['PUT', '#^/api/speaking/' . UUID_RE . '/transcript$#', 'api_put_speaking_transcript'],
+        ['POST', '#^/api/speaking/' . UUID_RE . '/assess$#', 'api_assess_speaking'],
+        ['POST', '#^/api/speaking/' . UUID_RE . '/finalize$#', 'api_finalize_speaking'],
+        ['POST', '#^/api/speaking/' . UUID_RE . '/reopen$#', 'api_reopen_speaking'],
         ['POST', '#^/api/settings/test$#', 'api_test_settings'],
         ['POST', '#^/api/settings/models$#', 'api_list_models'],
     ];
@@ -374,43 +378,121 @@ function api_get_question_image(string $id): never
     send_image(get_question($id)['imagePath']);
 }
 
-// ---- Pengaturan AI (admin) ----
+// ---- Speaking ----
 
-function api_get_settings(): JsonResponse
+function api_create_speaking(): JsonResponse
 {
-    require_admin();
-    return ok(public_settings());
-}
-
-/** Input pengaturan: [provider, model, baseUrl|null, apiKey|null]. */
-function settings_input(bool $requireModel = true): array
-{
+    require_once APP_DIR . '/lib/speaking.php';
+    $user = require_user();
     $body = request_json();
-    $provider = input_enum($body, 'provider', PROVIDERS);
-    $model = (string) input_str($body, 'model', 200, $requireModel, $requireModel ? 1 : 0);
-    $baseUrl = input_str($body, 'base_url', 500, false) ?: null;
-    $apiKey = input_str($body, 'api_key', 500, false) ?: null;
-    if (requires_base_url($provider)) {
-        if (!$baseUrl || !is_valid_base_url($baseUrl)) throw new AppError('VALIDATION_ERROR');
-    } else {
-        $baseUrl = null;
-    }
-    return [$provider, $model, $baseUrl, $apiKey];
+    $mode = input_enum($body, 'mode', SPEAKING_MODES);
+    $setId = input_str($body, 'set_id', 50, true, 1);
+    $student = normalize_student_name(input_str($body, 'student_name', 100, false));
+    return ok(['id' => create_speaking_test($user['id'], $student, $setId, $mode)], 201);
 }
 
-/** Daftar model yang tersedia untuk key ini (key baru dari form, atau key tersimpan). */
+function api_get_speaking(string $id): JsonResponse
+{
+    require_once APP_DIR . '/lib/speaking.php';
+    $user = require_user();
+    return ok(speaking_view(get_owned_speaking($id, $user['id'])));
+}
+
+/** Simpan transkrip satu Part (dibuat di browser). Rekam ulang = menimpa. */
+function api_put_speaking_transcript(string $id): JsonResponse
+{
+    require_once APP_DIR . '/lib/speaking.php';
+    $user = require_user();
+    $body = request_json();
+    $t = get_owned_speaking($id, $user['id']);
+    if ($t['status'] === 'final') throw new AppError('SPEAKING_LOCKED');
+    $part = input_enum($body, 'part', SPEAKING_PARTS);
+    if (!in_array($part, speaking_parts($t['mode']), true)) throw new AppError('VALIDATION_ERROR');
+    $text = (string) input_str($body, 'text', SPEAKING_TRANSCRIPT_MAX, true, 0);
+    $seconds = $body['seconds'] ?? 0;
+    if (!is_int($seconds) && !is_float($seconds)) throw new AppError('VALIDATION_ERROR');
+    $tr = speaking_transcripts($t);
+    $tr[$part] = ['text' => $text, 'misheard' => [], 'seconds' => (int) round($seconds)];
+    // Transkrip berubah: penilaian AI lama tidak berlaku lagi.
+    update_owned_speaking($id, $user['id'], ['transcripts' => json_enc($tr), 'status' => 'recording']);
+    return ok(speaking_view(get_owned_speaking($id, $user['id'])));
+}
+
+/** Satu panggilan AI (LR + GRA). Body opsional: misheard = { p1: [indeks kata], ... }. */
+function api_assess_speaking(string $id): JsonResponse
+{
+    require_once APP_DIR . '/llm/speaking.php';
+    $user = require_user();
+    release_session();
+    allow_long_request();
+    $body = request_json();
+    $t = get_owned_speaking($id, $user['id']);
+    if ($t['status'] === 'final') throw new AppError('SPEAKING_LOCKED');
+    if (!speaking_transcripts_complete($t)) throw new AppError('SPEAKING_NOT_READY');
+    if (isset($body['misheard']) && is_array($body['misheard'])) {
+        $tr = speaking_transcripts($t);
+        foreach (speaking_parts($t['mode']) as $p) {
+            $list = $body['misheard'][$p] ?? [];
+            if (!is_array($list)) throw new AppError('VALIDATION_ERROR');
+            $max = count(speaking_words($tr[$p]['text']));
+            $tr[$p]['misheard'] = array_values(array_unique(array_filter($list, fn($i) => is_int($i) && $i >= 0 && $i < $max)));
+        }
+        update_owned_speaking($id, $user['id'], ['transcripts' => json_enc($tr)]);
+        $t = get_owned_speaking($id, $user['id']);
+    }
+    return ok(speaking_view(assess_speaking($t, $user['id'])));
+}
+
+function api_finalize_speaking(string $id): JsonResponse
+{
+    require_once APP_DIR . '/lib/speaking.php';
+    $user = require_user();
+    $body = request_json();
+    $t = get_owned_speaking($id, $user['id']);
+    if ($t['status'] === 'final') throw new AppError('SPEAKING_LOCKED');
+    if ($t['status'] !== 'review') throw new AppError('SPEAKING_NOT_ASSESSED');
+    $bands = [];
+    foreach (SPEAKING_CRITERIA as $k) $bands[$k] = speaking_band_input($body['bands'][$k] ?? null);
+    $comment = input_str($body, 'comment', 3000, false);
+    $overall = speaking_overall($bands);
+    update_owned_speaking($id, $user['id'], [
+        'bandFc' => $bands['fc'],
+        'bandLr' => $bands['lr'],
+        'bandGra' => $bands['gra'],
+        'bandPron' => $bands['pron'],
+        'overallRaw' => $overall['raw'],
+        'overall' => $overall['band'],
+        'examinerComment' => $comment === null || $comment === '' ? null : $comment,
+        'status' => 'final',
+        'finalizedAt' => now_utc(),
+    ]);
+    return ok(speaking_view(get_owned_speaking($id, $user['id'])));
+}
+
+function api_reopen_speaking(string $id): JsonResponse
+{
+    require_once APP_DIR . '/lib/speaking.php';
+    $user = require_user();
+    $t = get_owned_speaking($id, $user['id']);
+    if ($t['status'] !== 'final') throw new AppError('VALIDATION_ERROR');
+    update_owned_speaking($id, $user['id'], ['status' => 'review']);
+    return ok(speaking_view(get_owned_speaking($id, $user['id'])));
+}
+
+// ---- Pengaturan AI (milik browser pengguna; server tidak menyimpan apa pun) ----
+
+/** Daftar model yang tersedia untuk key di header X-LLM-* (diisi dari form Pengaturan). */
 function api_list_models(): JsonResponse
 {
     require_once APP_DIR . '/llm/client.php';
-    require_admin();
+    require_user();
     release_session();
-    [$provider, $model, $baseUrl, $apiKey] = settings_input(false);
-    $apiKey ??= stored_api_key();
-    if (!$apiKey) throw new AppError('SETTINGS_TEST_FAILED', 'API key belum diisi');
+    $llm = request_llm_settings(false);
+    if (!$llm) throw new AppError('MODELS_FAILED', 'isi provider dan API key dulu');
     try {
-        $models = list_provider_models(['provider' => $provider, 'model' => $model, 'apiKey' => $apiKey, 'baseUrl' => $baseUrl]);
+        $models = list_provider_models($llm);
     } catch (Throwable $e) {
-        throw new AppError('MODELS_FAILED', $e->getMessage());
+        throw new AppError('MODELS_FAILED', str_replace($llm['apiKey'], '••••', $e->getMessage()));
     }
     return ok(['models' => $models]);
 }
@@ -418,35 +500,10 @@ function api_list_models(): JsonResponse
 function api_test_settings(): JsonResponse
 {
     require_once APP_DIR . '/llm/connection_test.php';
-    require_admin();
+    require_user();
     release_session();
     allow_long_request();
-    [$provider, $model, $baseUrl, $apiKey] = settings_input();
-    $apiKey ??= stored_api_key();
-    if (!$apiKey) throw new AppError('VALIDATION_ERROR');
-    return ok(run_connection_test(['provider' => $provider, 'model' => $model, 'apiKey' => $apiKey, 'baseUrl' => $baseUrl]));
-}
-
-function api_put_settings(): JsonResponse
-{
-    require_once APP_DIR . '/llm/connection_test.php';
-    $admin = require_admin();
-    release_session();
-    allow_long_request();
-    [$provider, $model, $baseUrl, $apiKey] = settings_input();
-    $row = get_settings()['row'];
-    // Tes wajib hanya kalau AI aktif berubah: key baru, atau key tersimpan dengan provider/model/base_url baru.
-    $changed = !$row || $row['provider'] !== $provider || $row['model'] !== $model || ($row['baseUrl'] ?? null) !== $baseUrl;
-    $needsTest = $apiKey !== null || (!empty($row['apiKeyEncrypted']) && $changed);
-    $testOk = null;
-    if ($needsTest) {
-        $key = $apiKey ?? stored_api_key();
-        if (!$key) throw new AppError('SETTINGS_TEST_FAILED', 'API key belum diisi');
-        // Server selalu menjalankan ulang tes; hasil tes di browser tidak dipercaya.
-        $test = run_connection_test(['provider' => $provider, 'model' => $model, 'apiKey' => $key, 'baseUrl' => $baseUrl]);
-        if (!$test['ok']) throw new AppError('SETTINGS_TEST_FAILED', $test['error'] ?? 'tidak diketahui');
-        $testOk = true;
-    }
-    save_settings($provider, $model, $baseUrl, $apiKey, $testOk, $admin['email']);
-    return ok(public_settings());
+    $llm = request_llm_settings();
+    if (!$llm) throw new AppError('SETTINGS_TEST_FAILED', 'provider, model, dan API key wajib diisi');
+    return ok(run_connection_test($llm));
 }

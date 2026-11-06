@@ -90,11 +90,22 @@ function is_duplicate_key(Throwable $e): bool
 
 // ---- Upgrade skema: kolom yang ditambahkan setelah instalasi pertama ----
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 4;
 
 /** Aman dijalankan berulang (dipakai /install dan ensure_schema). */
 function upgrade_schema(): void
 {
+    // v4: API key tidak lagi disimpan di server. Hapus tabel lama beserta key terenkripsi di dalamnya.
+    db()->exec('DROP TABLE IF EXISTS `appsetting`');
+
+    // v3: tabel Speaking + nilai 'speaking' di log AI.
+    $sql = file_get_contents(APP_DIR . '/schema.sql');
+    if (preg_match('/CREATE TABLE IF NOT EXISTS `speakingtest`.*?;/s', $sql, $m)) db()->exec($m[0]);
+    $action = db_one("SHOW COLUMNS FROM `llmcall` LIKE 'action'");
+    if ($action && !str_contains((string) $action['Type'], 'speaking')) {
+        db()->exec("ALTER TABLE `llmcall` MODIFY `action` enum('extract','grade','polish','speaking') NOT NULL, MODIFY `kind` enum('extract','factcheck','grade','polish','rescore','speaking') NOT NULL");
+    }
+
     $cols = array_column(db_all('SHOW COLUMNS FROM `submission`'), 'Field');
     if (!in_array('pendingState', $cols, true)) {
         db()->exec('ALTER TABLE `submission` ADD COLUMN `pendingState` longtext DEFAULT NULL');
