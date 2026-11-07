@@ -6,6 +6,19 @@ import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transfo
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
+// Banyak inti prosesor hanya bisa dipakai kalau halaman "cross-origin isolated" (header COOP/COEP
+// dari server). Tanpa itu browser hanya mengizinkan satu inti.
+let threads = self.crossOriginIsolated ? Math.max(1, Math.min(8, (navigator.hardwareConcurrency || 4) - 1)) : 1;
+function setThreads(n) {
+  threads = n;
+  try {
+    env.backends.onnx.wasm.numThreads = n;
+  } catch {
+    /* versi lain transformers.js */
+  }
+}
+setThreads(threads);
+
 const MODEL = "onnx-community/whisper-base.en";
 const DTYPE = {
   webgpu: { encoder_model: "fp32", decoder_model_merged: "q4" },
@@ -44,6 +57,8 @@ async function load(prefer) {
   }
   asr = await create("wasm");
   device = "wasm";
+  // Pemanasan juga di prosesor, supaya tes kecepatan tidak ikut menghitung waktu persiapan.
+  await asr(new Float32Array(16000), { chunk_length_s: 30 });
 }
 
 async function run(audio) {
@@ -54,8 +69,10 @@ self.onmessage = async (e) => {
   const m = e.data;
   try {
     if (m.type === "load") {
+      // Cadangan: worker baru dengan satu inti kalau mode banyak inti gagal di perangkat ini.
+      if (m.single) setThreads(1);
       await load(m.prefer);
-      postMessage({ type: "ready", device });
+      postMessage({ type: "ready", device, threads: device === "wasm" ? threads : null });
       return;
     }
     if (m.type === "transcribe") {

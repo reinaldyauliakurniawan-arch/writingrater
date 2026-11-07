@@ -23,8 +23,6 @@ function spSet(key, value) {
   }
 }
 
-const SP_DISCLAIMER = "Gunakan komputer atau laptop yang memadai dengan mikrofon untuk pengalaman terbaik. Perangkat lain boleh dicoba, tetapi hasilnya bisa lambat atau tidak stabil.";
-const SP_PRIVACY = "Audio tidak disimpan dan tidak dikirim ke mana pun. Rekaman diubah jadi teks di perangkat ini lalu langsung dibuang. Hanya transkrip teks dan nilai yang disimpan.";
 const PART_NAMES = { p1: "Part 1", p2: "Part 2", p3: "Part 3" };
 
 const isMobileDevice = () =>
@@ -61,7 +59,16 @@ const Whisper = {
   start() {
     if (this.worker) return;
     this.files = {};
-    this.worker = new Worker("/assets/whisper-worker.js", { type: "module" });
+    // Worker dibuat lewat blob yang meng-import file worker: worker blob mewarisi status "cross-origin
+    // isolated" halaman, sehingga transkripsi bisa memakai banyak inti prosesor.
+    const ver = document.querySelector('script[src*="speaking.js"]')?.src.split("?v=")[1] ?? "";
+    const src = new URL(`/assets/whisper-worker.js?v=${ver}`, location.href).href;
+    try {
+      const blob = new Blob([`import ${JSON.stringify(src)};`], { type: "text/javascript" });
+      this.worker = new Worker(URL.createObjectURL(blob), { type: "module" });
+    } catch {
+      this.worker = new Worker(src, { type: "module" });
+    }
     this.worker.onmessage = (e) => this.onMessage(e.data);
     this.worker.onerror = (e) => {
       e.preventDefault?.();
@@ -87,12 +94,12 @@ const Whisper = {
   },
 
   /** Satu percobaan memuat model di worker baru. */
-  loadOnce(prefer) {
+  loadOnce(prefer, single = false) {
     this.start();
     return new Promise((resolve, reject) => {
       this.readyResolve = resolve;
       this.readyReject = reject;
-      this.worker.postMessage({ type: "load", prefer });
+      this.worker.postMessage({ type: "load", prefer, single });
     });
   },
 
@@ -106,6 +113,7 @@ const Whisper = {
       this.emit({ type: "progress", loaded, total });
     } else if (m.type === "ready") {
       this.device = m.device;
+      this.threads = m.threads ?? null;
       this.loaded = true;
       spSet(SP_STORE.loading, null);
       spSet(SP_STORE.modelReady, { at: Date.now(), device: m.device });
@@ -137,15 +145,21 @@ const Whisper = {
     if (this.readyPromise) return this.readyPromise;
     spSet(SP_STORE.loading, Date.now());
     this.readyPromise = (async () => {
-      const prefer = await this.prefer();
-      try {
-        return await this.loadOnce(prefer);
-      } catch (e) {
-        if (prefer !== "webgpu") throw e;
-        this.stop();
-        this.emit({ type: "log", message: "Kartu grafis tidak bisa dipakai, pindah ke prosesor (lebih lambat)…" });
-        return await this.loadOnce("wasm");
+      const prefer = this.forceSingle ? "wasm" : await this.prefer();
+      let lastError = null;
+      // Urutan percobaan: kartu grafis -> prosesor banyak inti -> prosesor satu inti (paling aman).
+      const attempts = prefer === "webgpu" ? [["webgpu", false], ["wasm", false]] : [["wasm", !!this.forceSingle]];
+      if (window.crossOriginIsolated && !this.forceSingle) attempts.push(["wasm", true]);
+      for (const [dev, single] of attempts) {
+        try {
+          return await this.loadOnce(dev, single);
+        } catch (e) {
+          lastError = e;
+          this.stop();
+          this.emit({ type: "log", message: dev === "webgpu" ? "Kartu grafis tidak bisa dipakai, pindah ke prosesor…" : "Mencoba ulang dengan pengaturan prosesor paling aman…" });
+        }
       }
+      throw lastError;
     })();
     this.readyPromise.catch((e) => {
       spSet(SP_STORE.loading, null);
@@ -157,13 +171,28 @@ const Whisper = {
 
   /** Antrean satu per satu. audio: Float32Array 16 kHz mono. */
   transcribe(audio) {
-    const run = async () => {
+    const send = async (data) => {
       const device = await this.load();
       const id = ++this.seq;
       return new Promise((resolve, reject) => {
         this.jobs.set(id, { resolve, reject });
-        this.worker.postMessage({ type: "transcribe", id, audio, prefer: device }, [audio.buffer]);
+        this.worker.postMessage({ type: "transcribe", id, audio: data, prefer: device }, [data.buffer]);
       });
+    };
+    const run = async () => {
+      // Salinan cadangan hanya saat memakai banyak inti: kalau gagal, ulangi dengan satu inti.
+      const backup = (this.threads ?? 1) > 1 ? audio.slice() : null;
+      try {
+        return await send(audio);
+      } catch (e) {
+        if (!backup) throw e;
+        this.emit({ type: "log", message: "Transkripsi diulang dengan pengaturan prosesor paling aman…" });
+        this.forceSingle = true;
+        this.stop();
+        this.readyPromise = null;
+        this.loaded = false;
+        return await send(backup);
+      }
     };
     const p = this.chain.then(run, run);
     this.chain = p.catch(() => {});
@@ -297,15 +326,43 @@ async function keepScreenOn(on) {
 
 // ---------------------------------------------------------------- tampilan umum
 
-function spBanner(kind, ...children) {
-  return h("div", { class: kind === "error" ? "banner-error" : kind === "ok" ? "sp-banner-ok" : "banner-warning" }, ...children);
+/** Ikon garis (Lucide, MIT) sebagai SVG inline. Dekoratif: teks di sebelahnya yang menjelaskan. */
+const ICONS = {
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  laptop: '<path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/>',
+  arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  loader: '<path d="M21 12a9 9 0 1 1-6.22-8.56"/>',
+  clipboard: '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  rotate: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+};
+
+function icon(name, size = 18, cls = "") {
+  const span = document.createElement("span");
+  span.className = `ico ${cls}`.trim();
+  span.setAttribute("aria-hidden", "true");
+  span.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+  return span;
 }
 
-function checkSummaryText(c) {
-  if (!c) return ["warn", "Perangkat ini belum dicek."];
-  if (c.result === "green") return ["ok", `Perangkat siap (dicek ${formatDateId(new Date(c.at).toISOString())}).`];
-  if (c.result === "yellow") return ["warn", "Perangkat bisa dipakai, tapi transkripsi lambat."];
-  return ["error", "Perangkat ini tidak disarankan untuk ujian Speaking."];
+/** Catatan kecil berikon (pengganti banner bertumpuk). kind: info | warn | error | ok */
+function note(kind, iconName, ...children) {
+  return h("div", { class: `sp-note ${kind}`, role: kind === "error" ? "alert" : null }, icon(iconName, 18), h("div", { class: "grow" }, ...children));
+}
+
+const SP_DEVICE_NOTE = "Pakai laptop atau komputer dengan mikrofon untuk hasil terbaik. HP/tablet boleh dicoba, tetapi bisa lambat.";
+const SP_PRIVACY_SHORT = "Audio tidak disimpan dan tidak dikirim ke mana pun. Yang disimpan hanya transkrip dan nilai.";
+
+function checkSummary(c) {
+  if (!c) return { kind: "warn", text: "Perangkat ini belum dicek.", icon: "alert" };
+  if (c.result === "green") return { kind: "ok", text: `Perangkat siap (dicek ${formatDateId(new Date(c.at).toISOString())}).`, icon: "check" };
+  if (c.result === "yellow") return { kind: "warn", text: "Perangkat bisa dipakai, tapi transkripsi agak lambat.", icon: "alert" };
+  return { kind: "error", text: "Perangkat ini tidak disarankan untuk ujian Speaking.", icon: "x" };
 }
 
 function fmtSec(s) {
@@ -313,8 +370,18 @@ function fmtSec(s) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+function fmtWait(sec) {
+  sec = Math.round(sec);
+  return sec < 60 ? `±${sec} detik` : `±${Math.round(sec / 60)} menit`;
+}
+
 function wordsOf(text) {
   return String(text ?? "").trim().split(/\s+/).filter(Boolean);
+}
+
+function deviceLabel(device, threads) {
+  if (device === "webgpu") return "kartu grafis";
+  return threads && threads > 1 ? `prosesor (${threads} inti)` : "prosesor (1 inti)";
 }
 
 /** Soal satu Part. */
@@ -322,36 +389,50 @@ function partQuestion(set, part) {
   if (part === "p2") {
     const c = set.part2;
     return h("div", { class: "cue-card" },
-      h("p", { class: "bold" }, c.title),
-      h("p", { class: "semibold", style: "margin-top:10px" }, "You should say:"),
+      h("p", { class: "cue-title" }, c.title),
+      h("p", { class: "cue-say" }, "You should say:"),
       h("ul", { class: "cue-points" }, c.points.map((p) => h("li", null, p))),
-      h("p", { class: "bold", style: "margin-top:6px" }, c.final),
-      h("p", { class: "small muted", style: "margin-top:12px" }, "Murid punya 1 menit untuk bersiap (boleh membuat catatan), lalu berbicara 1–2 menit."));
+      h("p", { class: "cue-title", style: "margin-top:8px" }, c.final),
+      h("p", { class: "small muted", style: "margin-top:16px" }, "1 menit persiapan (boleh membuat catatan), lalu berbicara 1–2 menit."));
   }
   const topics = set[part === "p1" ? "part1" : "part3"];
-  return h("div", { class: "stack" }, topics.map((t) =>
+  return h("div", { class: "stack-lg" }, topics.map((t) =>
     h("div", { class: "sp-topic" },
-      h("p", { class: "bold" }, t.topic),
-      t.intro ? h("p", { class: "italic muted small" }, t.intro) : null,
+      h("p", { class: "sp-topic-title" }, t.topic),
+      t.intro ? h("p", { class: "italic muted small", style: "margin-top:4px" }, t.intro) : null,
       h("ul", { class: "sp-questions" }, t.questions.map((q) => h("li", null, q))))));
 }
+
+const pageHead = (title, subtitle, back) => h("div", { class: "sp-head" },
+  back ? h("a", { href: back.href, class: "sp-back" }, icon("arrowLeft", 16), back.label) : null,
+  h("h1", { class: "page-title" }, title),
+  subtitle ? h("p", { class: "muted" }, subtitle) : null);
 
 // ---------------------------------------------------------------- /speaking
 
 function speakingHome(root, data) {
-  const [kind, text] = checkSummaryText(spGet(SP_STORE.check));
+  const c = checkSummary(spGet(SP_STORE.check));
   const err = h("div");
-  const studentInput = h("input", { class: "input", id: "sp-student", list: "sp-students", maxlength: "100", placeholder: "Nama murid", autocomplete: "off" });
-  const setSelect = h("select", { class: "input", id: "sp-set" }, data.sets.map((s) => h("option", { value: s.id }, `${s.name} — ${s.part2}`)));
-  const modeSelect = h("select", { class: "input", id: "sp-mode" }, Object.entries(data.modes).map(([k, v]) => h("option", { value: k, selected: k === "full" }, v)));
-  const startBtn = h("button", { type: "submit", class: "btn-primary btn-lg" }, "Mulai ujian");
+  const studentInput = h("input", { class: "input", id: "sp-student", list: "sp-students", maxlength: "100", placeholder: "mis. Rina", autocomplete: "off" });
+  const setSelect = h("select", { class: "input", id: "sp-set" }, data.sets.map((s) => h("option", { value: s.id }, s.name)));
+  const cuePreview = h("p", { class: "small muted", style: "margin-top:6px" });
+  const showCue = () => (cuePreview.textContent = `Part 2: ${data.sets.find((s) => s.id === setSelect.value)?.part2 ?? ""}`);
+  setSelect.addEventListener("change", showCue);
+  showCue();
+  let mode = "full";
+  const modeBox = h("div", { class: "sp-modes", role: "radiogroup", "aria-label": "Mode" });
+  const drawModes = () => setChildren(modeBox, Object.entries(data.modes).map(([k, v]) =>
+    h("button", { type: "button", role: "radio", "aria-checked": k === mode ? "true" : "false", class: `sp-mode${k === mode ? " active" : ""}`,
+      onclick: () => { mode = k; drawModes(); } }, v)));
+  drawModes();
+  const startBtn = h("button", { type: "submit", class: "btn-primary btn-lg" }, icon("mic", 18), "Mulai ujian");
 
   const form = h("form", { class: "card stack", onsubmit: async (e) => {
     e.preventDefault();
     setChildren(err);
     startBtn.disabled = true;
     try {
-      const r = await api("/api/speaking", { method: "POST", json: { student_name: studentInput.value, set_id: setSelect.value, mode: modeSelect.value } });
+      const r = await api("/api/speaking", { method: "POST", json: { student_name: studentInput.value, set_id: setSelect.value, mode } });
       location.href = `/speaking/${r.id}`;
     } catch (ex) {
       setChildren(err, errorBanner(errorMessage(ex)));
@@ -361,30 +442,37 @@ function speakingHome(root, data) {
     h("h2", { class: "section-title", style: "margin:0" }, "Mulai ujian baru"),
     h("div", null, h("label", { class: "label", for: "sp-student" }, "Nama murid"), studentInput,
       h("datalist", { id: "sp-students" }, data.students.map((n) => h("option", { value: n })))),
-    h("div", null, h("label", { class: "label", for: "sp-set" }, "Set soal"), setSelect),
-    h("div", null, h("label", { class: "label", for: "sp-mode" }, "Mode"), modeSelect,
-      h("p", { class: "small muted", style: "margin-top:4px" }, "Mode satu Part menghasilkan \"estimasi latihan\"; mode lengkap menghasilkan \"skor simulasi\".")),
-    h("p", { class: "small muted" }, SP_PRIVACY),
+    h("div", null, h("label", { class: "label", for: "sp-set" }, "Set soal"), setSelect, cuePreview),
+    h("div", null, h("span", { class: "label" }, "Mode"), modeBox,
+      h("p", { class: "small muted", style: "margin-top:6px" }, "Satu Part menghasilkan estimasi latihan. Mode lengkap menghasilkan skor simulasi.")),
     err,
     h("div", null, startBtn));
 
+  const statusLabel = (t) => t.status === "final" ? h("span", { class: "sp-score" }, band1(t.overall))
+    : h("span", { class: `chip${t.status === "review" ? "" : " chip-muted"}` }, t.status === "review" ? "Menunggu finalisasi" : "Belum selesai");
   const list = data.tests.length
-    ? h("ul", { class: "stack-sm" }, data.tests.map((t) =>
-        h("li", null, h("a", { href: `/speaking/${t.id}`, class: "card list-item" },
-          h("span", { class: "grow" },
-            h("span", { class: "semibold", style: "display:block" }, t.student_name ?? "Tanpa nama"),
-            h("span", { class: "small muted" }, `${t.set_name} · ${t.mode_label} · ${t.created_at_text}`)),
-          h("span", { class: "score" }, t.status === "final" ? band1(t.overall) : t.status === "review" ? "Dinilai" : "Belum selesai")))))
-    : h("p", { class: "muted" }, "Belum ada ujian Speaking.");
+    ? h("ul", { class: "sp-list" }, data.tests.map((t) =>
+        h("li", null, h("a", { href: `/speaking/${t.id}` },
+          h("span", { class: "grow", style: "min-width:0" },
+            h("span", { class: "semibold truncate", style: "display:block" }, t.student_name ?? "Tanpa nama"),
+            h("span", { class: "small muted truncate", style: "display:block" }, `${t.set_name} · ${t.mode_label} · ${t.created_at_text}`)),
+          statusLabel(t)))))
+    : h("p", { class: "muted small" }, "Belum ada ujian Speaking.");
 
   setChildren(root, h("div", { class: "stack-lg" },
-    h("h1", { class: "page-title" }, "Speaking"),
-    spBanner("warn", SP_DISCLAIMER),
-    h("div", { class: "card row", style: "justify-content:space-between" },
-      h("p", { class: kind === "ok" ? "notice" : kind === "error" ? "text-danger semibold" : "semibold" }, text),
-      h("a", { href: "/speaking/cek", class: "btn-secondary" }, kind === "ok" ? "Cek ulang perangkat" : "Cek perangkat")),
-    form,
-    h("section", null, h("h2", { class: "section-title" }, "Ujian sebelumnya"), list)));
+    pageHead("Speaking", "Simulasi IELTS Speaking bersama examiner. AI membantu menilai Lexical Resource dan Grammar dari transkrip."),
+    h("div", { class: "sp-home" },
+      form,
+      h("div", { class: "stack" },
+        h("section", { class: "card stack-sm" },
+          h("h2", { class: "section-title", style: "margin:0" }, "Perangkat"),
+          note(c.kind, c.icon, c.text),
+          h("a", { href: "/speaking/cek", class: "btn-secondary btn-block" }, c.kind === "ok" ? "Cek ulang perangkat" : "Cek perangkat"),
+          h("p", { class: "small muted" }, SP_DEVICE_NOTE)),
+        h("section", { class: "card stack-sm" },
+          h("h2", { class: "section-title", style: "margin:0" }, "Ujian terakhir"),
+          list),
+        note("info", "shield", h("span", { class: "small" }, SP_PRIVACY_SHORT))))));
 }
 
 // ---------------------------------------------------------------- /speaking/cek
@@ -424,12 +512,15 @@ function speakingCheck(root) {
   st.browser = missing.length ? "red" : "green";
 
   const levelBar = h("div", { class: "level-fill" });
-  const box = h("div", { class: "stack" });
+  const box = h("ol", { class: "card sp-steps" });
 
-  const icon = (s) => h("span", { class: `check-icon ${s ?? "todo"}`, "aria-hidden": "true" }, s === "green" ? "✓" : s === "yellow" ? "!" : s === "red" ? "✕" : "");
-  const item = (n, title, status, ...body) => h("section", { class: `card check-item ${status ?? ""}` },
-    h("div", { class: "row", style: "flex-wrap:nowrap;align-items:flex-start" }, icon(status),
-      h("div", { class: "grow stack-sm" }, h("h2", { class: "bold" }, `${n}. ${title}`), ...body)));
+  const STATUS_ICON = { green: "check", yellow: "alert", red: "x", loading: "loader" };
+  const STATUS_TEXT = { green: "Lolos", yellow: "Perlu perhatian", red: "Bermasalah", loading: "Berjalan" };
+  const step = (n, title, status, ...body) => h("li", { class: `sp-step ${status ?? "todo"}` },
+    h("div", { class: "sp-step-mark" }, status && STATUS_ICON[status] ? icon(STATUS_ICON[status], 16, status === "loading" ? "spin" : "") : String(n)),
+    h("div", { class: "grow stack-sm" },
+      h("div", { class: "sp-step-head" }, h("h2", null, title), status && STATUS_TEXT[status] ? h("span", { class: "sr-only" }, ` — ${STATUS_TEXT[status]}`) : null),
+      ...body));
 
   async function askMic() {
     st.micMsg = "";
@@ -441,7 +532,7 @@ function speakingCheck(root) {
       const all = await navigator.mediaDevices.enumerateDevices();
       st.devices = all.filter((d) => d.kind === "audioinput");
       meter = levelMeter(stream, levelBar);
-      st.level = "yellow";
+      st.level = "loading";
       setTimeout(() => {
         st.level = meter && meter.peak() > 0.08 ? "green" : "red";
         draw();
@@ -470,7 +561,9 @@ function speakingCheck(root) {
     try {
       const dev = await Whisper.load();
       st.model = "green";
-      st.modelMsg = dev === "webgpu" ? "Siap. Memakai kartu grafis (cepat)." : "Siap. Memakai prosesor (kartu grafis tidak tersedia, jadi lebih lambat).";
+      st.modelMsg = dev === "webgpu"
+        ? "Siap. Memakai kartu grafis (cepat)."
+        : `Siap. Memakai ${deviceLabel(dev, Whisper.threads)}. Kartu grafis tidak tersedia, jadi lebih lambat.`;
     } catch (e) {
       st.model = "red";
       st.modelMsg = friendlyWhisperError(e.message);
@@ -499,8 +592,8 @@ function speakingCheck(root) {
       const acc = similarity(SAMPLE_SENTENCE, r.text);
       st.transcript = r.text || "(tidak ada suara yang terdengar)";
       st.speed = rtf <= 0.5 ? "green" : rtf <= 1.5 ? "yellow" : "red";
-      const wait = Math.round(rtf * 240);
-      st.speedMsg = `${fmtSec(seconds)} rekaman ditranskripsi dalam ${(r.ms / 1000).toFixed(1)} detik. Perkiraan tunggu untuk jawaban 4 menit: ±${wait < 60 ? `${wait} detik` : `${Math.round(wait / 60)} menit`}. Kecocokan dengan kalimat contoh: ${Math.round(acc * 100)}%.`;
+      st.speedMsg = `Rekaman ${fmtSec(seconds)} selesai dalam ${(r.ms / 1000).toFixed(1)} detik memakai ${deviceLabel(r.device, Whisper.threads)}. `
+        + `Perkiraan tunggu untuk jawaban 4 menit: ${fmtWait(rtf * 240)}. Ketepatan: ${Math.round(acc * 100)}%.`;
       spSet(SP_STORE.check, { at: Date.now(), result: st.speed === "green" && st.level !== "red" ? "green" : st.speed === "red" ? "red" : "yellow", device: r.device, rtf });
     } catch (e) {
       st.speed = "red";
@@ -514,66 +607,71 @@ function speakingCheck(root) {
     const pct = st.progress?.total ? Math.round((st.progress.loaded / st.progress.total) * 100) : 0;
     const mb = (b) => (b / 1048576).toFixed(0);
     const micSelect = st.devices.length > 1
-      ? h("label", { class: "small" }, "Mikrofon: ",
-          h("select", { class: "input", style: "max-width:360px;display:inline-block", onchange: (e) => { spSet(SP_STORE.mic, e.target.value); askMic(); } },
+      ? h("label", { class: "small sp-inline-field" }, "Mikrofon",
+          h("select", { class: "input", onchange: (e) => { spSet(SP_STORE.mic, e.target.value); askMic(); } },
             st.devices.map((d, i) => h("option", { value: d.deviceId, selected: d.deviceId === (spGet(SP_STORE.mic) ?? stream?.getAudioTracks()[0]?.getSettings().deviceId) }, d.label || `Mikrofon ${i + 1}`))))
       : null;
-    const modelStatus = crashed && st.model !== "green" ? "red" : st.model === "loading" ? "yellow" : st.model;
+    const modelStatus = crashed && st.model !== "green" ? "red" : st.model;
+    const speedStatus = ["green", "yellow", "red"].includes(st.speed) ? st.speed : st.speed === "working" ? "loading" : null;
+    const verdict = {
+      green: ["ok", "check", "Lancar. Perangkat ini siap untuk ujian Speaking."],
+      yellow: ["warn", "alert", "Bisa dipakai, tapi agak lambat. Transkripsi Part sebelumnya berjalan sambil ujian berlanjut, jadi biasanya hanya Part terakhir yang perlu ditunggu."],
+      red: ["error", "x", "Tidak disarankan. Pakai laptop/komputer lain yang lebih kuat."],
+    }[st.speed];
 
     setChildren(box,
-      item(1, "Browser", st.browser,
+      step(1, "Browser", st.browser,
         st.browser === "green"
-          ? h("p", { class: "small" }, "Browser mendukung semua yang dibutuhkan.")
-          : h("p", { class: "small" }, `Browser ini belum mendukung: ${missing.join(", ")}. Pakai Google Chrome atau Microsoft Edge versi terbaru, dan buka situs lewat alamat https://.`)),
-      item(2, "Izin mikrofon", st.mic,
-        st.mic === "green" ? h("p", { class: "small" }, "Mikrofon diizinkan.")
+          ? h("p", { class: "small muted" }, "Browser mendukung semua yang dibutuhkan.")
+          : h("p", { class: "small" }, `Browser ini belum mendukung: ${missing.join(", ")}. Pakai Google Chrome atau Microsoft Edge versi terbaru, lewat alamat https://.`)),
+      step(2, "Izin mikrofon", st.mic,
+        st.mic === "green" ? h("p", { class: "small muted" }, "Mikrofon diizinkan.")
           : h("div", { class: "stack-sm" },
-              st.micMsg ? h("p", { class: "small text-danger semibold" }, st.micMsg) : h("p", { class: "small" }, "Browser akan meminta izin memakai mikrofon. Pilih \"Izinkan\"."),
+              st.micMsg ? note("error", "x", st.micMsg) : h("p", { class: "small muted" }, "Browser akan meminta izin memakai mikrofon. Pilih \"Izinkan\"."),
               st.mic === "red" ? h("ol", { class: "small help-steps" },
-                h("li", null, "Klik ikon gembok (🔒) di sebelah kiri alamat web."),
+                h("li", null, "Klik ikon gembok di sebelah kiri alamat web."),
                 h("li", null, "Cari \"Mikrofon\", ubah menjadi \"Izinkan\"."),
-                h("li", null, "Muat ulang halaman ini (tekan F5)."),
-                h("li", null, "Kalau masih gagal: tutup aplikasi lain yang memakai mikrofon (Zoom, Meet, WhatsApp), lalu coba lagi.")) : null,
-              h("button", { type: "button", class: "btn-primary", disabled: st.browser === "red", onclick: askMic }, "Izinkan mikrofon"))),
-      item(3, "Mikrofon menangkap suara", st.mic === "green" ? st.level : null,
-        h("p", { class: "small" }, "Bicaralah beberapa kata. Bar hijau harus bergerak."),
+                h("li", null, "Muat ulang halaman ini (F5)."),
+                h("li", null, "Masih gagal? Tutup aplikasi lain yang memakai mikrofon (Zoom, Meet, WhatsApp), lalu coba lagi.")) : null,
+              h("div", null, h("button", { type: "button", class: "btn-primary", disabled: st.browser === "red", onclick: askMic }, icon("mic", 16), "Izinkan mikrofon")))),
+      step(3, "Mikrofon menangkap suara", st.mic === "green" ? st.level : null,
+        h("p", { class: "small muted" }, "Bicaralah beberapa kata. Bar hijau harus bergerak."),
         h("div", { class: "level-track" }, levelBar),
         micSelect,
-        st.level === "red" ? h("p", { class: "small text-danger semibold" }, "Suara hampir tidak terdengar. Dekatkan mikrofon, naikkan volume input di pengaturan suara Windows, atau pilih mikrofon lain.") : null),
-      item(4, "Alat transkripsi (Whisper)", modelStatus,
-        h("p", { class: "small" }, "Alat ini mengubah suara menjadi teks langsung di perangkat ini. Diunduh sekali (sekitar 70–200 MB), setelah itu tersimpan di browser. Tidak perlu memasang aplikasi apa pun."),
-        crashed && st.model !== "green" ? h("p", { class: "small text-danger semibold" }, "Percobaan sebelumnya berhenti di tengah jalan (tab tertutup atau kehabisan memori). Perangkat ini kemungkinan tidak kuat. Tutup tab/aplikasi lain lalu coba lagi, atau pakai laptop lain.") : null,
+        st.level === "red" ? note("error", "x", "Suara hampir tidak terdengar. Dekatkan mikrofon, naikkan volume input di pengaturan suara Windows, atau pilih mikrofon lain.") : null),
+      step(4, "Alat transkripsi (Whisper)", modelStatus,
+        h("p", { class: "small muted" }, "Mengubah suara menjadi teks langsung di perangkat ini. Diunduh sekali (70–200 MB), lalu tersimpan di browser. Tidak perlu memasang aplikasi apa pun."),
+        crashed && st.model !== "green" ? note("error", "x", "Percobaan sebelumnya berhenti di tengah jalan (tab tertutup atau kehabisan memori). Tutup tab/aplikasi lain lalu coba lagi, atau pakai laptop lain.") : null,
         st.model === "loading" ? h("div", { class: "stack-sm" },
           h("div", { class: "level-track" }, h("div", { class: "level-fill", style: `width:${pct}%` })),
-          h("p", { class: "small muted" }, st.progress?.total ? `Mengunduh ${mb(st.progress.loaded)} / ${mb(st.progress.total)} MB (${pct}%)…` : "Menyiapkan…", " Jangan tutup halaman ini.")) : null,
+          h("p", { class: "small muted" }, st.progress?.total ? `Mengunduh ${mb(st.progress.loaded)} / ${mb(st.progress.total)} MB (${pct}%). ` : "Menyiapkan… ", "Jangan tutup halaman ini.")) : null,
         st.modelMsg ? h("p", { class: `small ${st.model === "red" ? "text-danger semibold" : "muted"}` }, st.modelMsg) : null,
         st.model !== "green" && st.model !== "loading"
-          ? h("button", { type: "button", class: "btn-primary", disabled: st.browser === "red", onclick: loadModel }, crashed || st.model === "red" ? "Coba lagi" : "Siapkan alat transkripsi")
+          ? h("div", null, h("button", { type: "button", class: "btn-primary", disabled: st.browser === "red", onclick: loadModel }, crashed || st.model === "red" ? "Coba lagi" : "Siapkan alat transkripsi"))
           : null),
-      item(5, "Tes kecepatan & ketepatan", ["green", "yellow", "red"].includes(st.speed) ? st.speed : null,
-        h("p", { class: "small" }, "Klik \"Mulai tes\", bacakan kalimat di bawah dengan suara normal, lalu klik \"Selesai\"."),
+      step(5, "Tes kecepatan & ketepatan", speedStatus,
+        h("p", { class: "small muted" }, "Klik \"Mulai tes\", bacakan kalimat ini dengan suara normal, lalu klik \"Selesai\"."),
         h("blockquote", { class: "sample" }, SAMPLE_SENTENCE),
-        st.speed === "working" ? h("p", { class: "small muted spinner-text" }, "Mentranskripsi") : null,
+        st.speed === "working" ? h("p", { class: "small muted" }, "Mentranskripsi…") : null,
         st.transcript ? h("p", { class: "small" }, h("span", { class: "semibold" }, "Hasil: "), st.transcript) : null,
-        st.speedMsg ? h("p", { class: "small" }, st.speedMsg) : null,
-        st.speed === "green" ? h("p", { class: "notice small" }, "🟢 Lancar. Perangkat ini siap untuk ujian Speaking.") : null,
-        st.speed === "yellow" ? h("p", { class: "small semibold" }, "🟡 Bisa dipakai, tapi lambat. Setelah ujian mungkin perlu menunggu beberapa menit.") : null,
-        st.speed === "red" ? h("p", { class: "small text-danger semibold" }, "🔴 Tidak disarankan. Pakai laptop/komputer lain yang lebih kuat.") : null,
-        h("button", { type: "button", class: st.speed === "recording" ? "btn-primary btn-danger" : "btn-primary",
+        st.speedMsg ? h("p", { class: "small muted" }, st.speedMsg) : null,
+        verdict ? note(verdict[0], verdict[1], verdict[2]) : null,
+        h("div", null, h("button", { type: "button", class: st.speed === "recording" ? "btn-primary btn-danger" : "btn-primary",
           disabled: st.mic !== "green" || st.model !== "green" || st.speed === "working", onclick: speedTest },
-          st.speed === "recording" ? "Selesai" : st.speed && st.speed !== "working" ? "Ulangi tes" : "Mulai tes")),
-      st.speed && ["green", "yellow"].includes(st.speed) ? h("a", { href: "/speaking", class: "btn-primary btn-lg" }, "Lanjut ke Speaking") : null,
+          st.speed === "recording" ? [icon("stop", 16), "Selesai"] : [icon("mic", 16), st.speed && st.speed !== "working" ? "Ulangi tes" : "Mulai tes"]))),
     );
+    nextLink.classList.toggle("hidden", !["green", "yellow"].includes(st.speed));
   }
 
-  setChildren(root, h("div", { class: "stack-lg" },
-    h("div", { class: "stack-sm" },
-      h("h1", { class: "page-title" }, "Cek Perangkat"),
-      h("p", { class: "muted" }, "Lakukan sekali sebelum ujian Speaking pertama di perangkat ini. Tidak ada yang perlu dipasang; cukup Chrome atau Edge versi terbaru.")),
-    spBanner("warn", SP_DISCLAIMER),
-    isMobileDevice() ? spBanner("warn", "Perangkat ini terdeteksi sebagai HP/tablet. Boleh dicoba, tetapi untuk ujian lengkap (Part 1–3) laptop atau komputer jauh lebih stabil.") : null,
-    h("p", { class: "small muted" }, SP_PRIVACY),
-    box));
+  const nextLink = h("a", { href: "/speaking", class: "btn-primary btn-lg hidden" }, "Lanjut ke Speaking", icon("arrowRight", 18));
+  setChildren(root, h("div", { class: "stack-lg sp-narrow" },
+    pageHead("Cek Perangkat", "Lakukan sekali sebelum ujian pertama di perangkat ini. Cukup Chrome atau Edge versi terbaru.", { href: "/speaking", label: "Speaking" }),
+    isMobileDevice()
+      ? note("warn", "alert", "Perangkat ini terdeteksi sebagai HP/tablet. Boleh dicoba, tetapi untuk ujian lengkap laptop atau komputer jauh lebih stabil.")
+      : note("info", "laptop", SP_DEVICE_NOTE),
+    box,
+    note("info", "shield", h("span", { class: "small" }, SP_PRIVACY_SHORT)),
+    h("div", null, nextLink)));
   draw();
   modelCached().then((cached) => {
     if (cached && !crashed) loadModel();
@@ -598,6 +696,7 @@ function speakingTest(root, initial) {
     misheard: {},
     form: null,
     showAi: false,
+    confirmRerecord: null,
   };
   const levelBar = h("div", { class: "level-fill" });
   let tickTimer = null;
@@ -655,6 +754,7 @@ function speakingTest(root, initial) {
   async function startRec(part) {
     st.error = null;
     st.interrupted = false;
+    st.confirmRerecord = null;
     try {
       const stream = await ensureMic();
       st.rec = { part, handle: startRecording(stream, { onInterrupted: () => {
@@ -681,6 +781,9 @@ function speakingTest(root, initial) {
     keepScreenOn(false);
     const { blob, seconds } = await r.handle.stop();
     st.jobs[r.part] = { status: "queued", seconds };
+    // Otomatis pindah ke Part berikutnya yang belum direkam.
+    const next = view.parts.find((p) => p !== r.part && !hasTranscript(p) && !st.jobs[p]);
+    if (next) st.part = next;
     draw();
     processPart(r.part, blob, seconds);
   }
@@ -766,21 +869,18 @@ function speakingTest(root, initial) {
     draw();
   }
 
-  const head = () => h("div", { class: "stack-sm" },
-    h("p", { class: "small muted semibold" }, h("a", { href: "/speaking" }, "← Speaking")),
-    h("h1", { class: "page-title" }, view.student_name ?? "Ujian Speaking"),
-    h("p", { class: "muted" }, `${view.set.name} · ${view.mode_label}`));
+  const head = () => pageHead(view.student_name ?? "Ujian Speaking", `${view.set.name} · ${view.mode_label}`, { href: "/speaking", label: "Speaking" });
 
   // ---- status recording
-  function partStatus(p) {
+  function partState(p) {
     const j = st.jobs[p];
-    if (st.rec?.part === p) return h("span", { class: "chip rec" }, "● Merekam");
-    if (j?.status === "queued") return h("span", { class: "chip" }, "Menunggu transkripsi");
-    if (j?.status === "working") return h("span", { class: "chip spinner-text" }, "Mentranskripsi");
-    if (j?.status === "saving") return h("span", { class: "chip" }, "Menyimpan");
-    if (j?.status === "error") return h("span", { class: "chip chip-error" }, "Gagal");
-    if (hasTranscript(p)) return h("span", { class: "chip chip-ok" }, `✓ ${wordsOf(view.transcripts[p].text).length} kata`);
-    return h("span", { class: "chip" }, "Belum direkam");
+    if (st.rec?.part === p) return { cls: "rec", text: "Merekam" };
+    if (j?.status === "queued") return { cls: "busy", text: "Antre transkripsi" };
+    if (j?.status === "working") return { cls: "busy", text: "Mentranskripsi…" };
+    if (j?.status === "saving") return { cls: "busy", text: "Menyimpan…" };
+    if (j?.status === "error") return { cls: "error", text: "Gagal" };
+    if (hasTranscript(p)) return { cls: "done", text: `${wordsOf(view.transcripts[p].text).length} kata` };
+    return { cls: "todo", text: "Belum direkam" };
   }
 
   function drawRecording() {
@@ -789,79 +889,79 @@ function speakingTest(root, initial) {
     const p = st.part;
     const j = st.jobs[p];
     const recordingThis = st.rec?.part === p;
-    const otherRecording = st.rec && !recordingThis;
-    const idx = parts.indexOf(p);
-    const next = parts[idx + 1];
-    const check = spGet(SP_STORE.check);
-
-    const controls = h("div", { class: "card stack-sm rec-box" },
-      h("div", { class: "row", style: "justify-content:space-between" },
-        h("div", { class: "row-sm" },
-          recordingThis ? h("span", { class: "rec-dot", "aria-hidden": "true" }) : null,
-          h("span", { class: "bold", id: "sp-rec-time" }, recordingThis ? fmtSec((Date.now() - st.rec.handle.started) / 1000) : j?.seconds ? fmtSec(j.seconds) : hasTranscript(p) ? fmtSec(view.transcripts[p].seconds ?? 0) : "0:00"),
-          h("span", { class: "small muted" }, "durasi rekaman")),
-        partStatus(p)),
-      h("div", { class: "level-track" }, levelBar),
-      st.interrupted ? h("p", { class: "banner-error small" }, "Rekaman terputus (mikrofon dicabut atau dipakai aplikasi lain). Klik \"Selesai\" lalu rekam ulang Part ini.") : null,
-      j?.status === "error" ? h("div", { class: "stack-sm" }, h("p", { class: "small text-danger semibold" }, j.message),
-        j.retrySave ? h("button", { type: "button", class: "btn-secondary", onclick: () => saveTranscript(p) }, "Coba simpan lagi") : null) : null,
-      h("div", { class: "row-sm" },
-        recordingThis
-          ? h("button", { type: "button", class: "btn-primary btn-danger btn-lg", onclick: stopRec }, "■ Selesai")
-          : h("button", { type: "button", class: "btn-primary btn-lg", disabled: !!otherRecording || (j && j.status !== "error"),
-              onclick: () => {
-                if (hasTranscript(p) && !confirmReRecord()) return;
-                startRec(p);
-              } }, hasTranscript(p) || j ? "● Rekam ulang" : "● Mulai rekam"),
-        next && !recordingThis ? h("button", { type: "button", class: "btn-secondary btn-lg", onclick: () => { st.part = next; draw(); } }, `${PART_NAMES[next]} →`) : null),
-      hasTranscript(p) && !j ? h("details", null, h("summary", null, "Lihat transkrip"), h("p", { class: "small prewrap", style: "margin-top:8px" }, view.transcripts[p].text || "(kosong)")) : null);
-
     const ready = allDone();
-    setChildren(root, h("div", { class: "stack-lg" },
-      head(),
-      !check ? spBanner("warn", "Perangkat ini belum dicek. ", h("a", { href: "/speaking/cek", class: "semibold", style: "text-decoration:underline" }, "Buka Cek Perangkat"), " sebelum mulai supaya tidak ada masalah di tengah ujian.") : null,
-      st.modelState === "error" ? spBanner("error", `Alat transkripsi gagal dimuat: ${st.modelMsg}`) : st.modelMsg ? h("p", { class: "small muted" }, st.modelMsg) : null,
-      h("p", { class: "small muted" }, SP_PRIVACY, " Jangan tutup halaman ini sampai semua Part selesai ditranskripsi."),
-      parts.length > 1 ? h("div", { class: "row-sm sp-tabs", role: "tablist" }, parts.map((x) =>
-        h("button", { type: "button", role: "tab", class: `sp-tab${x === p ? " active" : ""}`, "aria-selected": x === p ? "true" : "false", disabled: !!st.rec && x !== p,
-          onclick: () => { st.part = x; draw(); } }, PART_NAMES[x], " ", partStatus(x)))) : null,
-      h("section", { class: "card stack" }, h("h2", { class: "section-title", style: "margin:0" }, PART_NAMES[p]), partQuestion(view.set, p)),
-      controls,
-      st.error ? errorBanner(st.error) : null,
-      h("div", { class: "card stack-sm" },
-        h("p", { class: "semibold" }, ready ? "Semua Part sudah ditranskripsi." : "Tombol penilaian aktif setelah semua Part direkam dan ditranskripsi."),
-        h("button", { type: "button", class: "btn-primary btn-lg", disabled: !ready || st.busy || !!st.rec, onclick: () => assess(false) },
-          st.busy ? "AI sedang menilai Lexical Resource & Grammar…" : "Lanjut ke penilaian"))));
-  }
+    const check = spGet(SP_STORE.check);
+    const done = parts.filter((x) => hasTranscript(x) && !st.jobs[x]).length;
 
-  function confirmReRecord() {
-    // Tidak memakai confirm() bawaan browser: tombol kedua kali = konfirmasi.
-    const key = `rr-${st.part}`;
-    if (st[key]) {
-      st[key] = false;
-      return true;
-    }
-    st[key] = true;
-    st.error = `Transkrip ${PART_NAMES[st.part]} yang lama akan diganti. Klik "Rekam ulang" sekali lagi untuk melanjutkan.`;
-    draw();
-    return false;
+    const recordBtn = recordingThis
+      ? h("button", { type: "button", class: "btn-primary btn-danger btn-lg btn-block", onclick: stopRec }, icon("stop", 18), `Selesai ${PART_NAMES[p]}`)
+      : h("button", { type: "button", class: "btn-primary btn-lg btn-block", disabled: !!st.rec || (j && j.status !== "error"),
+          onclick: () => {
+            if (hasTranscript(p) && st.confirmRerecord !== p) {
+              st.confirmRerecord = p;
+              draw();
+              return;
+            }
+            startRec(p);
+          } }, icon(hasTranscript(p) ? "rotate" : "mic", 18), hasTranscript(p) || j ? `Rekam ulang ${PART_NAMES[p]}` : `Mulai rekam ${PART_NAMES[p]}`);
+
+    const panel = h("aside", { class: "card sp-panel stack" },
+      parts.length > 1 ? h("ol", { class: "sp-parts", "aria-label": "Daftar Part" }, parts.map((x) => {
+        const s = partState(x);
+        return h("li", null, h("button", { type: "button", class: `sp-part${x === p ? " active" : ""}`, disabled: !!st.rec && x !== p, "aria-current": x === p ? "step" : null,
+          onclick: () => { st.part = x; st.confirmRerecord = null; draw(); } },
+          h("span", { class: `sp-part-dot ${s.cls}` }, s.cls === "done" ? icon("check", 12) : null),
+          h("span", { class: "grow semibold" }, PART_NAMES[x]),
+          h("span", { class: `sp-part-state ${s.cls}` }, s.text)));
+      })) : null,
+      h("div", { class: "sp-recorder" },
+        h("div", { class: "row", style: "justify-content:space-between" },
+          h("span", { class: "small muted semibold" }, recordingThis ? h("span", { class: "rec-live" }, h("span", { class: "rec-dot", "aria-hidden": "true" }), "Merekam") : "Durasi rekaman"),
+          h("span", { class: "small muted" }, PART_NAMES[p])),
+        h("p", { class: "sp-timer", id: "sp-rec-time", "aria-live": "off" },
+          recordingThis ? fmtSec((Date.now() - st.rec.handle.started) / 1000) : j?.seconds ? fmtSec(j.seconds) : hasTranscript(p) ? fmtSec(view.transcripts[p].seconds ?? 0) : "0:00"),
+        h("div", { class: "level-track", title: "Volume mikrofon" }, levelBar)),
+      st.interrupted ? note("error", "x", "Rekaman terputus (mikrofon dicabut atau dipakai aplikasi lain). Klik Selesai lalu rekam ulang Part ini.") : null,
+      st.confirmRerecord === p ? note("warn", "alert", `Transkrip ${PART_NAMES[p]} yang lama akan diganti. Klik "Rekam ulang" sekali lagi untuk melanjutkan.`) : null,
+      j?.status === "error" ? note("error", "x", j.message, j.retrySave ? h("div", { style: "margin-top:8px" }, h("button", { type: "button", class: "btn-secondary", onclick: () => saveTranscript(p) }, "Coba simpan lagi")) : null) : null,
+      recordBtn,
+      h("hr", { class: "sp-divider" }),
+      h("div", { class: "stack-sm" },
+        h("p", { class: "small muted" }, ready ? "Semua Part sudah ditranskripsi." : `${done} dari ${parts.length} Part selesai ditranskripsi.`),
+        h("button", { type: "button", class: "btn-primary btn-block", disabled: !ready || st.busy || !!st.rec, onclick: () => assess(false) },
+          st.busy ? [icon("loader", 16, "spin"), "AI sedang menilai…"] : ["Lanjut ke penilaian", icon("arrowRight", 16)])),
+      st.error ? note("error", "x", st.error) : null,
+      st.modelState === "error" ? note("error", "x", `Alat transkripsi gagal dimuat: ${st.modelMsg}`)
+        : st.modelMsg ? h("p", { class: "small muted" }, st.modelMsg) : null,
+      !check ? note("warn", "alert", "Perangkat ini belum dicek. ", h("a", { href: "/speaking/cek", class: "semibold link" }, "Buka Cek Perangkat")) : null,
+      h("p", { class: "small muted sp-privacy" }, icon("shield", 14), SP_PRIVACY_SHORT));
+
+    const question = h("section", { class: "card stack sp-question" },
+      h("div", { class: "row", style: "justify-content:space-between" },
+        h("h2", { class: "section-title", style: "margin:0" }, PART_NAMES[p]),
+        h("span", { class: `sp-part-state ${partState(p).cls}` }, partState(p).text)),
+      partQuestion(view.set, p),
+      hasTranscript(p) && !j ? h("details", { class: "sp-transcript-preview" }, h("summary", null, "Lihat transkrip"),
+        h("p", { class: "small prewrap", style: "margin-top:8px" }, view.transcripts[p].text || "(kosong)")) : null);
+
+    setChildren(root, h("div", { class: "stack-lg" }, head(), h("div", { class: "sp-layout" }, question, panel)));
   }
 
   // ---- status review
-  const bandSelect = (key, label, required) => h("label", { class: "band-field" },
-    h("span", { class: "semibold" }, label),
-    h("select", { class: "input", onchange: (e) => {
+  const bandSelect = (key, label) => h("label", { class: "band-field" },
+    h("span", { class: "semibold small" }, label),
+    h("select", { class: `input${st.form[key] === null ? " empty" : ""}`, onchange: (e) => {
       st.form[key] = e.target.value === "" ? null : Number(e.target.value);
       draw();
     } },
-      h("option", { value: "", selected: st.form[key] === null }, required ? "Pilih…" : "–"),
+      h("option", { value: "", selected: st.form[key] === null }, "Pilih band"),
       [9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((b) => h("option", { value: String(b), selected: st.form[key] === b }, String(b)))));
 
   function examplesList(examples) {
     if (!examples?.length) return null;
     return h("ul", { class: "sp-examples" }, examples.map((x) =>
       h("li", { class: x.kind === "good" ? "good" : "bad" },
-        h("span", { class: "ex-mark", "aria-hidden": "true" }, x.kind === "good" ? "✓" : "✗"),
+        h("span", { class: "ex-mark" }, icon(x.kind === "good" ? "check" : "x", 14), h("span", { class: "sr-only" }, x.kind === "good" ? "Bagus: " : "Perlu diperbaiki: ")),
         h("span", null,
           h("span", { class: "italic" }, `“${x.quote}”`),
           x.kind === "error" && x.correction ? [" → ", h("span", { class: "semibold" }, x.correction)] : null,
@@ -872,7 +972,7 @@ function speakingTest(root, initial) {
     const ws = wordsOf(view.transcripts[p].text);
     const set = st.misheard[p];
     return h("div", { class: "sp-transcript" },
-      ws.length ? ws.map((w, i) => [h("button", { type: "button", class: `word${set.has(i) ? " misheard" : ""}`, title: "Klik untuk menandai salah dengar",
+      ws.length ? ws.map((w, i) => [h("button", { type: "button", class: `word${set.has(i) ? " misheard" : ""}`, "aria-pressed": set.has(i) ? "true" : "false",
         onclick: () => {
           if (set.has(i)) set.delete(i);
           else set.add(i);
@@ -889,51 +989,54 @@ function speakingTest(root, initial) {
   function drawReview() {
     const f = st.form;
     const ai = view.ai;
-    const complete = ["fc", "lr", "gra", "pron"].every((k) => f[k] !== null);
-    const overall = complete ? band1(roundHalfJs((f.fc + f.lr + f.gra + f.pron) / 4)) : "–";
+    const missing = ["fc", "lr", "gra", "pron"].filter((k) => f[k] === null).length;
     const changedAi = ai && (f.lr !== ai.lr.band || f.gra !== ai.gra.band);
     const aiDraft = ai ? `Lexical Resource: ${ai.lr.summary}\n\nGrammatical Range & Accuracy: ${ai.gra.summary}` : "";
-    const commentBox = h("textarea", { class: "input", rows: "4", maxlength: "3000", placeholder: "Komentar personal untuk murid (opsional). Kosong = tidak ditampilkan di laporan.",
+    const commentBox = h("textarea", { class: "input", id: "sp-comment", rows: "4", maxlength: "3000", placeholder: "Komentar personal untuk murid. Kosong = tidak ditampilkan di laporan.",
       oninput: (e) => (f.comment = e.target.value) });
     commentBox.value = f.comment;
 
     const aiCard = (k, name) => h("div", { class: "stack-sm sp-ai" },
-      h("p", { class: "small muted semibold" }, `Usulan AI untuk ${name}: ${ai[k].band}`),
+      h("p", { class: "small semibold" }, `${name} · usulan AI ${ai[k].band}`),
       h("p", { class: "small" }, ai[k].summary),
       examplesList(ai[k].examples));
 
-    setChildren(root, h("div", { class: "stack-lg" },
-      head(),
+    const panel = h("aside", { class: "card sp-panel stack" },
+      h("div", { class: "sp-overall" },
+        h("span", { class: "small muted semibold" }, view.label),
+        missing ? h("span", { class: "sp-overall-empty" }, `Isi ${missing} skor lagi`) : h("span", { class: "sp-overall-num" }, band1(roundHalfJs((f.fc + f.lr + f.gra + f.pron) / 4)))),
+      h("div", { class: "band-grid" },
+        bandSelect("fc", "Fluency & Coherence"),
+        bandSelect("pron", "Pronunciation"),
+        bandSelect("lr", "Lexical Resource"),
+        bandSelect("gra", "Grammatical Range & Accuracy")),
+      h("p", { class: "small muted" }, "Fluency & Coherence dan Pronunciation diisi examiner. Lexical Resource dan Grammar sudah terisi usulan AI dan boleh diubah."),
+      h("div", { class: "stack-sm" },
+        h("label", { class: "label", for: "sp-comment" }, "Examiner's comment (opsional)"),
+        commentBox,
+        changedAi && aiDraft ? h("button", { type: "button", class: "link-btn", onclick: () => {
+          f.comment = f.comment.trim() ? `${f.comment.trim()}\n\n${aiDraft}` : aiDraft;
+          draw();
+        } }, "Pakai catatan AI sebagai draf") : null),
+      st.error ? note("error", "x", st.error) : null,
+      h("button", { type: "button", class: "btn-primary btn-lg btn-block", disabled: missing > 0 || st.busy, onclick: finalize }, st.busy ? "Menyimpan…" : "Finalize"));
+
+    const main = h("div", { class: "stack" },
+      ai ? h("section", { class: "card stack-sm" },
+        h("details", { open: st.showAi, ontoggle: (e) => (st.showAi = e.target.open) },
+          h("summary", { class: "semibold" }, "Alasan & contoh dari AI"),
+          h("div", { class: "grid-2", style: "margin-top:12px" }, aiCard("lr", "Lexical Resource"), aiCard("gra", "Grammar")))) : null,
       h("section", { class: "card stack" },
-        h("h2", { class: "section-title", style: "margin:0" }, "Penilaian examiner"),
-        h("p", { class: "small muted" }, "Fluency & Coherence dan Pronunciation wajib diisi examiner. Lexical Resource dan Grammar sudah terisi usulan AI dan boleh diubah. Nilai yang difinalisasi adalah nilai final."),
-        h("div", { class: "band-grid" },
-          bandSelect("fc", "Fluency & Coherence", true),
-          bandSelect("lr", "Lexical Resource", true),
-          bandSelect("gra", "Grammatical Range & Accuracy", true),
-          bandSelect("pron", "Pronunciation", true)),
-        h("p", null, h("span", { class: "semibold" }, "Skor keseluruhan: "), h("span", { class: "score-inline" }, overall), h("span", { class: "small muted" }, ` · ${view.label}`)),
-        ai ? h("details", { open: st.showAi, ontoggle: (e) => (st.showAi = e.target.open) }, h("summary", null, "Lihat alasan & contoh dari AI"),
-          h("div", { class: "grid-2", style: "margin-top:12px" }, aiCard("lr", "Lexical Resource"), aiCard("gra", "Grammar"))) : null,
         h("div", { class: "stack-sm" },
-          h("label", { class: "label" }, "Examiner's comment (opsional)"),
-          commentBox,
-          changedAi && aiDraft ? h("button", { type: "button", class: "link-btn", onclick: () => {
-            f.comment = f.comment.trim() ? `${f.comment.trim()}\n\n${aiDraft}` : aiDraft;
-            draw();
-          } }, "Pakai catatan AI sebagai draf") : null),
-        st.error ? errorBanner(st.error) : null,
-        h("div", { class: "row-sm" },
-          h("button", { type: "button", class: "btn-primary btn-lg", disabled: !complete || st.busy, onclick: finalize }, st.busy ? "Menyimpan…" : "Finalize"),
-          !complete ? h("span", { class: "small muted" }, "Isi keempat skor dulu.") : null)),
-      h("section", { class: "card stack" },
-        h("h2", { class: "section-title", style: "margin:0" }, "Transkrip"),
-        h("p", { class: "small muted" }, "Klik kata yang salah dengar oleh mesin transkripsi (misalnya nama tempat yang berubah jadi kata lain). Kata yang ditandai diabaikan AI. Teks tidak bisa diedit."),
+          h("h2", { class: "section-title", style: "margin:0" }, "Transkrip"),
+          h("p", { class: "small muted" }, "Klik kata yang salah dengar oleh mesin transkripsi (misalnya nama tempat yang berubah jadi kata lain). Kata yang ditandai diabaikan AI. Teks tidak bisa diedit.")),
         view.parts.map((p) => h("div", { class: "stack-sm" },
           h("h3", { class: "bold" }, PART_NAMES[p], h("span", { class: "small muted" }, ` · ${fmtSec(view.transcripts[p].seconds ?? 0)}`)),
           transcriptMarker(p))),
-        marksChanged() ? h("button", { type: "button", class: "btn-secondary", disabled: st.busy, onclick: () => assess(true) },
-          st.busy ? "AI sedang menilai ulang…" : "Nilai ulang LR/GRA dengan tanda ini") : null)));
+        marksChanged() ? h("div", null, h("button", { type: "button", class: "btn-secondary", disabled: st.busy, onclick: () => assess(true) },
+          st.busy ? [icon("loader", 16, "spin"), "AI sedang menilai ulang…"] : "Nilai ulang LR & Grammar dengan tanda ini")) : null));
+
+    setChildren(root, h("div", { class: "stack-lg" }, head(), h("div", { class: "sp-layout review" }, main, panel)));
   }
 
   // ---- status final
@@ -949,7 +1052,7 @@ function speakingTest(root, initial) {
   function drawFinal() {
     const crit = view.criteria;
     const copyStatus = h("span", { class: "small", role: "status" });
-    setChildren(root, h("div", { class: "stack-lg" },
+    setChildren(root, h("div", { class: "stack-lg sp-report" },
       head(),
       h("section", { class: "card score-hero" },
         h("div", { class: "score-overall" },
@@ -966,19 +1069,19 @@ function speakingTest(root, initial) {
             const ok = await copyRich(html, text);
             copyStatus.className = ok ? "small notice" : "small text-danger";
             copyStatus.textContent = ok ? "Tersalin. Tempel (Ctrl+V) di Google Docs." : "Browser menolak menyalin.";
-          } }, "Salin untuk murid"),
+          } }, icon("clipboard", 16), "Salin untuk murid"),
           h("button", { type: "button", class: "btn-secondary", disabled: st.busy, onclick: reopen }, "Buka kembali"),
           copyStatus)),
       view.examiner_comment ? h("section", { class: "card stack-sm" }, h("h2", { class: "section-title", style: "margin:0" }, "Examiner's comment"), h("p", { class: "prewrap" }, view.examiner_comment)) : null,
-      st.error ? errorBanner(st.error) : null,
+      st.error ? note("error", "x", st.error) : null,
       h("div", { class: "stack" }, crit.map((c) =>
         h("section", { class: "criterion" },
           h("div", { class: "criterion-head" }, h("h3", null, c.name), h("span", { class: "band" }, String(c.band))),
-          h("p", { class: "small muted", style: "margin:4px 0 8px" }, c.by === "ai" ? "Usulan AI, disetujui examiner" : "Dinilai examiner"),
+          h("p", { class: "small muted", style: "margin:2px 0 8px" }, c.by === "ai" ? "Usulan AI, disetujui examiner" : "Dinilai examiner"),
           c.summary ? h("p", { class: "feedback" }, c.summary) : null,
-          c.examples.length ? h("div", { class: "stack-sm", style: "margin-top:8px" }, h("p", { class: "small semibold" }, "Contoh dari jawaban kamu"), examplesList(c.examples)) : null,
-          h("details", { open: !c.examples.length, style: "margin-top:8px" }, h("summary", { class: "small" }, `Descriptor resmi band ${c.band}`), h("div", { style: "margin-top:8px" }, descriptorBlock(c)))))),
-      h("details", { class: "card" }, h("summary", null, "Transkrip"),
+          c.examples.length ? h("div", { class: "stack-sm", style: "margin-top:12px" }, h("p", { class: "small semibold" }, "Contoh dari jawaban"), examplesList(c.examples)) : null,
+          h("details", { open: !c.examples.length, style: "margin-top:12px" }, h("summary", { class: "small" }, `Descriptor resmi band ${c.band}`), h("div", { style: "margin-top:8px" }, descriptorBlock(c)))))),
+      h("details", { class: "card" }, h("summary", { class: "semibold" }, "Transkrip"),
         h("div", { class: "stack", style: "margin-top:12px" }, view.parts.map((p) =>
           h("div", { class: "stack-sm" }, h("h3", { class: "bold" }, PART_NAMES[p]), h("p", { class: "prewrap small" }, view.transcripts[p]?.text || "(kosong)"))))),
       h("p", { class: "small muted" }, "Transkrip dibuat otomatis oleh mesin dan bisa berbeda sedikit dari ucapan asli. Skor ini adalah hasil latihan, bukan skor resmi IELTS.")));
@@ -1037,9 +1140,9 @@ function speakingReport(v) {
     t.push(`Band descriptor ${c.band}:\n` + c.descriptor.lines.map((l) => `- ${l}`).join("\n"));
     T.push(t.join("\n"));
   }
-  const note = "Skor ini adalah hasil latihan Speaking, bukan skor resmi IELTS. Transkrip dibuat otomatis oleh mesin.";
-  H.push(`<p style="color:#6b7280"><i>${note}</i></p>`);
-  T.push(note);
+  const noteText = "Skor ini adalah hasil latihan Speaking, bukan skor resmi IELTS. Transkrip dibuat otomatis oleh mesin.";
+  H.push(`<p style="color:#6b7280"><i>${noteText}</i></p>`);
+  T.push(noteText);
   return { html: H.join(""), text: T.join("\n\n") };
 }
 

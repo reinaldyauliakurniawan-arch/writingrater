@@ -213,12 +213,21 @@ function page_speaking(): never
         'modes' => SPEAKING_MODE_LABELS,
         'tests' => speaking_list($user['id']),
         'students' => $students,
+        'wide' => true,
     ], 'Speaking');
+}
+
+/** Halaman yang menjalankan Whisper: "cross-origin isolated" supaya transkripsi bisa memakai banyak inti prosesor. */
+function speaking_isolation_headers(): void
+{
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Embedder-Policy: credentialless');
 }
 
 function page_speaking_check(): never
 {
     require_user();
+    speaking_isolation_headers();
     render('speaking_check', [], 'Cek Perangkat');
 }
 
@@ -226,7 +235,8 @@ function page_speaking_test(string $id): never
 {
     require_once APP_DIR . '/lib/speaking.php';
     $user = require_user();
-    render('speaking_test', ['view' => speaking_view(get_owned_speaking($id, $user['id'])), 'wide' => true], 'Ujian Speaking');
+    speaking_isolation_headers();
+    render('speaking_test',['view' => speaking_view(get_owned_speaking($id, $user['id'])), 'wide' => true], 'Ujian Speaking');
 }
 
 // ---- Instalasi: buat/perbarui tabel dan impor soal bawaan ----

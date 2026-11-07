@@ -24,6 +24,14 @@ DirectoryIndex index.php
     Header always set Referrer-Policy "same-origin"
 </IfModule>
 
+# Worker transkripsi Speaking: harus ikut "cross-origin isolated" supaya bisa memakai banyak inti prosesor.
+<IfModule mod_headers.c>
+    <Files "whisper-worker.js">
+        Header set Cross-Origin-Embedder-Policy "credentialless"
+        Header set Cross-Origin-Resource-Policy "same-origin"
+    </Files>
+</IfModule>
+
 <FilesMatch "\.(json|sql|md)$">
     Require all denied
 </FilesMatch>

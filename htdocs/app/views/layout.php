@@ -4,6 +4,15 @@ $user = current_user();
 $wide = !empty($vars['wide']);
 $v = '?v=' . filemtime(dirname(APP_DIR) . '/assets/app.js') . filemtime(dirname(APP_DIR) . '/assets/app.css');
 $speakingPage = str_starts_with((string) ($view ?? ''), 'speaking');
+$navPath = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$navSection = match (true) {
+    str_starts_with($navPath, '/speaking') => 'speaking',
+    str_starts_with($navPath, '/history') => 'history',
+    str_starts_with($navPath, '/questions') => 'questions',
+    str_starts_with($navPath, '/settings') => 'settings',
+    default => 'writing',
+};
+$navLink = fn(string $href, string $key, string $label) => '<a href="' . $href . '"' . ($navSection === $key ? ' aria-current="page"' : '') . '>' . $label . '</a>';
 ?><!doctype html>
 <html lang="id">
 <head>
@@ -11,7 +20,7 @@ $speakingPage = str_starts_with((string) ($view ?? ''), 'speaking');
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <title><?= e($pageTitle ? "$pageTitle · " . APP_NAME : APP_NAME) ?></title>
-    <meta name="description" content="Latihan menilai IELTS Writing Task 1 Academic dan Task 2 dengan AI.">
+    <meta name="description" content="Latihan menilai IELTS Writing (Task 1 Academic, Task 2) dan Speaking dengan AI.">
     <link rel="icon" href="/assets/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,11 +39,11 @@ $speakingPage = str_starts_with((string) ($view ?? ''), 'speaking');
             </a>
             <?php if ($user): ?>
                 <nav class="nav">
-                    <a href="/new">Baru</a>
-                    <a href="/speaking">Speaking</a>
-                    <a href="/history">Riwayat</a>
-                    <a href="/questions">Soal</a>
-                    <a href="/settings">Pengaturan</a>
+                    <?= $navLink('/new', 'writing', 'Writing') ?>
+                    <?= $navLink('/speaking', 'speaking', 'Speaking') ?>
+                    <?= $navLink('/history', 'history', 'Riwayat') ?>
+                    <?= $navLink('/questions', 'questions', 'Soal') ?>
+                    <?= $navLink('/settings', 'settings', 'Pengaturan') ?>
                     <form method="post" action="/logout">
                         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
                         <button type="submit" class="nav-logout">Keluar</button>

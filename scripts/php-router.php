@@ -7,5 +7,13 @@ if (preg_match('#^/(app|storage)(/|$)|^/config(\.sample)?\.php$#', $path)) {
     http_response_code(403);
     exit('Forbidden');
 }
+if ($path === '/assets/whisper-worker.js') {
+    // Header isolasi seperti di .htaccess (server bawaan PHP tidak membaca .htaccess).
+    header('Content-Type: text/javascript; charset=utf-8');
+    header('Cross-Origin-Embedder-Policy: credentialless');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    readfile($root . $path);
+    return true;
+}
 if ($path !== '/' && is_file($root . $path) && !str_ends_with($path, '.php')) return false;
 require $root . '/index.php';
